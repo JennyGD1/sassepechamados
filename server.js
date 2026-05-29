@@ -187,7 +187,87 @@ app.delete('/api/usuarios/:id', auth, adminOnly, async (req, res) => {
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+// ── Logs de Visualização de Bandeja ───────────────────────────────────────────
+app.post('/api/logs/visualizacao-bandeja', auth, async (req, res) => {
+  try {
+    const { totalChamadosVisiveis } = req.body;
+    const { rows } = await db.registrarVisualizacaoBandeja(req.userId, totalChamadosVisiveis);
+    res.json(rows[0]);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
+app.get('/api/logs/visualizacao-bandeja', auth, async (req, res) => {
+  try {
+    const limit = req.query.limit || 10;
+    const { rows } = await db.getUltimasVisualizacoesBandeja(req.userId, limit);
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Edição de Perfil do Usuário ───────────────────────────────────────────────
+app.put('/api/usuarios/perfil', auth, async (req, res) => {
+  try {
+    const { nome_completo, email, senha_atual, nova_senha } = req.body;
+    
+    // Buscar usuário atual
+    const userResult = await db.findUserByEmail(email);
+    if (!userResult.rows.length && email) {
+      // Se está trocando de email, verificar se o novo email já existe
+      const emailCheck = await db.emailExistsExcludingUser(email, req.userId);
+      if (emailCheck.rows.length > 0) {
+        return res.status(409).json({ error: 'E-mail já cadastrado por outro usuário.' });
+      }
+    }
+    
+    let result;
+    
+    // Se está tentando mudar a senha
+    if (nova_senha && nova_senha.trim()) {
+      if (!senha_atual) {
+        return res.status(400).json({ error: 'Senha atual é necessária para alterar a senha.' });
+      }
+      
+      // Verificar senha atual
+      const user = userResult.rows[0];
+      if (!user || !(await bcrypt.compare(senha_atual, user.senha_hash))) {
+        return res.status(401).json({ error: 'Senha atual incorreta.' });
+      }
+      
+      const nova_senha_hash = await bcrypt.hash(nova_senha.trim(), 10);
+      result = await db.updateUsuarioPerfilComSenha(req.userId, nome_completo, email, nova_senha_hash);
+    } else {
+      // Apenas atualizar nome e email
+      result = await db.updateUsuarioPerfil(req.userId, nome_completo, email);
+    }
+    
+    // Gerar novo token com dados atualizados
+    const cargoResult = await db.getCargoByUserId(req.userId);
+    const nivel_acesso = cargoResult.rows[0]?.nivel_acesso || 'SOLICITANTE';
+    
+    const newToken = jwt.sign(
+      { id: req.userId, nome: result.rows[0].nome_completo, nivel_acesso },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+    
+    res.json({
+      token: newToken,
+      user: {
+        id: req.userId,
+        nome: result.rows[0].nome_completo,
+        email: result.rows[0].email,
+        nivel_acesso
+      }
+    });
+  } catch (e) {
+    if (e.code === '23505') return res.status(409).json({ error: 'E-mail já cadastrado.' });
+    res.status(500).json({ error: e.message });
+  }
+});
 // ── Iniciar ───────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`✅ Servidor rodando na porta ${PORT}`));
