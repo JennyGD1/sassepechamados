@@ -367,8 +367,6 @@ app.get('/api/admin/logs-visualizacao/export', auth, adminOnly, async (req, res)
 });
 
 // ── Iniciar ───────────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`✅ Servidor rodando na porta ${PORT}`));
 
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3001;
