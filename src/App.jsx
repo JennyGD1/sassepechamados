@@ -21,9 +21,23 @@ const STATUS_COLOR = { 'ABERTO': '#F59E0B', 'EM ANALISE': '#3B82F6', 'AGUARDANDO
 const STATUS_LABEL = { 'ABERTO': 'Aberto', 'EM ANALISE': 'Em Análise', 'AGUARDANDO VALIDACAO': 'Aguard. Validação', 'CONCLUIDO': 'Concluído' };
 const CRIT_COLOR   = { Alta: '#EF4444', Média: '#F59E0B', Baixa: '#10B981' };
 
-const fmt = d => d ? new Date(d).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
 const calcPrazo = (crit, comp) => { const h = PRAZO_HORAS[crit][comp]; const d = new Date(); d.setHours(d.getHours() + h); return { horas: h, data: d }; };
+// ── Função para formatar data com timezone local ─────────────────────────────
+const formatLocalDate = (dateStr) => {
+  if (!dateStr) return '—';
+  const date = new Date(dateStr);
+  // Se a data veio do banco já no timezone correto, apenas formatar
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 
+// Substituir a função fmt existente por:
+const fmt = d => d ? formatLocalDate(d) : '—';
 // ── CSS global ────────────────────────────────────────────────────────────────
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
@@ -173,7 +187,13 @@ function HistoricoModal({ chamado, onClose, api }) {
   const [hist, setHist] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    api(`/chamados/${chamado.id}/historico`).then(d => { if (d) setHist(d); setLoading(false); });
+    api(`/chamados/${chamado.id}/historico`).then(d => { 
+      if (d) {
+        const sorted = [...d].sort((a, b) => new Date(b.data_hora) - new Date(a.data_hora));
+        setHist(sorted);
+      }
+      setLoading(false);
+    });
   }, []);
   return (
     <Modal onClose={onClose}>
@@ -356,6 +376,7 @@ function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
     { id: 'novo-chamado',   icon: '➕', label: 'Abrir Chamado' },
     { id: 'bandeja',        icon: '📥', label: 'Bandeja' },
     { id: 'usuarios',       icon: '👥', label: 'Usuários' },
+    { id: 'logs-visualizacao', icon: '📊', label: 'Logs de Visualização' },
   ];
 
   const items = nivel === 'MASTER_ADMIN' ? navAdmin : nivel === 'TECNICO' ? navTecnico : navSolicitante;
@@ -817,6 +838,349 @@ function UsuariosView({ api }) {
   );
 }
 
+// ── View: Logs de Visualização (MASTER_ADMIN) ─────────────────────────────────
+function LogsVisualizacaoView({ api }) {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(50);
+  const [offset, setOffset] = useState(0);
+  const [filtroUsuario, setFiltroUsuario] = useState('');
+  const [dataInicio, setDataInicio] = useState('');
+  const [dataFim, setDataFim] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const mostrarToast = (msg, tipo = 'ok') => {
+    setToast({ msg, tipo });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const carregarLogs = async () => {
+    setLoading(true);
+    try {
+      const url = `/admin/logs-visualizacao?limit=${limit}&offset=${offset}`;
+      const data = await api(url);
+      if (data) {
+        setLogs(data.logs || []);
+        setTotal(data.total || 0);
+      }
+    } catch (err) {
+      mostrarToast('Erro ao carregar logs', 'err');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    carregarLogs();
+  }, [limit, offset]);
+
+  const totalPages = Math.ceil(total / limit);
+  const currentPage = Math.floor(offset / limit) + 1;
+
+  const exportarCSV = async () => {
+    try {
+      let url = '/admin/logs-visualizacao/export';
+      if (dataInicio && dataFim) {
+        url += `?startDate=${dataInicio}&endDate=${dataFim}`;
+      }
+      const data = await api(url);
+      if (data && data.logs) {
+        const csvData = data.logs.map(log => ({
+          ID: log.id,
+          Usuário: log.nome_completo,
+          Email: log.email,
+          'Nível Acesso': log.nivel_acesso || 'N/A',
+          'Data Visualização': new Date(log.data_visualizacao).toLocaleString('pt-BR'),
+          'Total Chamados': log.total_chamados_visiveis
+        }));
+        
+        const headers = Object.keys(csvData[0] || {});
+        const csvRows = [
+          headers.join(','),
+          ...csvData.map(row => headers.map(h => `"${(row[h] || '').toString().replace(/"/g, '""')}"`).join(','))
+        ];
+        
+        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const urlBlob = URL.createObjectURL(blob);
+        link.href = urlBlob;
+        link.setAttribute('download', `logs_visualizacao_${new Date().toISOString().slice(0,19)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(urlBlob);
+        
+        mostrarToast('CSV exportado com sucesso!');
+      }
+    } catch (err) {
+      mostrarToast('Erro ao exportar CSV', 'err');
+    }
+  };
+
+  const excluirLog = async (id) => {
+    try {
+      await api(`/admin/logs-visualizacao/${id}`, { method: 'DELETE' });
+      mostrarToast('Log excluído com sucesso!');
+      carregarLogs();
+    } catch (err) {
+      mostrarToast('Erro ao excluir log', 'err');
+    }
+    setConfirmDelete(null);
+  };
+
+  const excluirTodosLogs = async () => {
+    try {
+      await api('/admin/logs-visualizacao?all=true', { method: 'DELETE' });
+      mostrarToast('Todos os logs foram excluídos!');
+      carregarLogs();
+    } catch (err) {
+      mostrarToast('Erro ao excluir logs', 'err');
+    }
+    setConfirmDelete(null);
+  };
+
+  const excluirLogsPorUsuario = async (usuarioId) => {
+    try {
+      await api(`/admin/logs-visualizacao?usuarioId=${usuarioId}`, { method: 'DELETE' });
+      mostrarToast('Logs do usuário excluídos com sucesso!');
+      carregarLogs();
+    } catch (err) {
+      mostrarToast('Erro ao excluir logs', 'err');
+    }
+    setConfirmDelete(null);
+  };
+
+  const logsFiltrados = logs.filter(log => {
+    if (!filtroUsuario) return true;
+    return log.nome_completo.toLowerCase().includes(filtroUsuario.toLowerCase()) ||
+           log.email.toLowerCase().includes(filtroUsuario.toLowerCase());
+  });
+
+  return (
+    <div>
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: 28, right: 28, zIndex: 2000,
+          padding: '12px 20px', borderRadius: 12, fontWeight: 600, fontSize: '.875rem',
+          background: toast.tipo === 'err' ? '#FEF2F2' : '#F0FDF4',
+          color: toast.tipo === 'err' ? '#991B1B' : '#166534',
+          border: `1px solid ${toast.tipo === 'err' ? '#FECACA' : '#BBF7D0'}`,
+          boxShadow: 'var(--shadow-lg)'
+        }}>
+          {toast.tipo === 'err' ? '❌' : '✅'} {toast.msg}
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+        <div>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: 4 }}>Logs de Visualização da Bandeja</h2>
+          <p style={{ color: 'var(--muted)', fontSize: '.875rem' }}>
+            Registros de quando os usuários visualizaram a bandeja de chamados
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn btn-blue" onClick={() => setShowFilters(!showFilters)}>
+            🔍 {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+          </button>
+          <button className="btn btn-green" onClick={exportarCSV}>
+            📊 Exportar CSV
+          </button>
+          <button className="btn btn-red" onClick={() => setConfirmDelete({ type: 'all' })}>
+            🗑 Limpar Todos
+          </button>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      {showFilters && (
+        <div className="card" style={{ marginBottom: 24, padding: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+            <div>
+              <label className="label">Filtrar por Usuário</label>
+              <input
+                className="input-field"
+                placeholder="Nome ou e-mail..."
+                value={filtroUsuario}
+                onChange={e => setFiltroUsuario(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label">Data Início</label>
+              <input
+                className="input-field"
+                type="date"
+                value={dataInicio}
+                onChange={e => setDataInicio(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label">Data Fim</label>
+              <input
+                className="input-field"
+                type="date"
+                value={dataFim}
+                onChange={e => setDataFim(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
+        {[
+          { num: total, lbl: 'Total de Visualizações', color: 'var(--text)' },
+          { num: logsFiltrados.length, lbl: 'Registros Exibidos', color: '#3B82F6' },
+          { num: new Set(logs.map(l => l.id_usuario)).size, lbl: 'Usuários Únicos', color: '#10B981' }
+        ].map((s, i) => (
+          <div key={i} className="stat-card">
+            <div className="stat-num" style={{ color: s.color, fontSize: '1.8rem' }}>{s.num}</div>
+            <div className="stat-lbl">{s.lbl}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabela */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
+          Carregando logs...
+        </div>
+      ) : logsFiltrados.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
+          <div style={{ fontSize: '2rem', marginBottom: 10 }}>📭</div>
+          <p>Nenhum log de visualização encontrado.</p>
+        </div>
+      ) : (
+        <>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'auto 1.5fr 1.5fr 1fr 1fr 1fr 1.5fr auto',
+              gap: 12,
+              padding: '12px 20px',
+              borderBottom: '1px solid var(--border)',
+              background: 'var(--bg)'
+            }}>
+              {['ID', 'Usuário', 'E-mail', 'Nível', 'Data', 'Chamados', 'Ações'].map((h, i) => (
+                <div key={i} style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', fontFamily: 'Syne' }}>
+                  {h}
+                </div>
+              ))}
+            </div>
+            {logsFiltrados.map((log, i) => {
+              const nivelColor = log.nivel_acesso === 'MASTER_ADMIN' ? '#8B5CF6' : log.nivel_acesso === 'TECNICO' ? '#3B82F6' : '#F59E0B';
+              return (
+                <div key={log.id} style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'auto 1.5fr 1.5fr 1fr 1fr 1fr 1.5fr auto',
+                  gap: 12,
+                  padding: '14px 20px',
+                  alignItems: 'center',
+                  borderBottom: i < logsFiltrados.length - 1 ? '1px solid var(--border)' : 'none',
+                  background: i % 2 === 0 ? 'transparent' : 'var(--bg)'
+                }}>
+                  <div style={{ fontSize: '.8rem', fontFamily: 'monospace', color: 'var(--muted)' }}>#{log.id}</div>
+                  <div style={{ fontWeight: 600, fontSize: '.875rem' }}>{log.nome_completo}</div>
+                  <div style={{ fontSize: '.75rem', color: 'var(--muted)' }}>{log.email}</div>
+                  <div>
+                    <span className="badge" style={{ background: nivelColor + '20', color: nivelColor, fontSize: '.65rem' }}>
+                      {log.nivel_acesso || 'SOLICITANTE'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '.8rem' }}>{new Date(log.data_visualizacao).toLocaleString('pt-BR')}</div>
+                  <div style={{ fontSize: '.8rem', textAlign: 'center' }}>
+                    <span className="badge" style={{ background: '#3B82F620', color: '#3B82F6' }}>
+                      {log.total_chamados_visiveis} chamados
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '.8rem', color: 'var(--muted)' }}>
+                    {Math.ceil((new Date() - new Date(log.data_visualizacao)) / (1000 * 60 * 60))}h atrás
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ padding: '4px 10px', fontSize: '.72rem', color: '#EF4444', borderColor: '#FECACA' }}
+                      onClick={() => setConfirmDelete({ type: 'single', id: log.id })}
+                      title="Excluir log"
+                    >
+                      🗑
+                    </button>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ padding: '4px 10px', fontSize: '.72rem', color: '#F59E0B', borderColor: '#FEF3C7' }}
+                      onClick={() => setConfirmDelete({ type: 'user', usuarioId: log.id_usuario, nome: log.nome_completo })}
+                      title="Excluir todos os logs deste usuário"
+                    >
+                      👤
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Paginação */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 24 }}>
+              <button
+                className="btn btn-ghost"
+                disabled={offset === 0}
+                onClick={() => setOffset(Math.max(0, offset - limit))}
+              >
+                ← Anterior
+              </button>
+              <span style={{ padding: '8px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8 }}>
+                Página {currentPage} de {totalPages}
+              </span>
+              <button
+                className="btn btn-ghost"
+                disabled={offset + limit >= total}
+                onClick={() => setOffset(offset + limit)}
+              >
+                Próxima →
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Modal de Confirmação */}
+      {confirmDelete && (
+        <Modal onClose={() => setConfirmDelete(null)}>
+          <h2 style={{ marginBottom: 8 }}>
+            {confirmDelete.type === 'all' ? 'Limpar Todos os Logs' :
+             confirmDelete.type === 'user' ? `Excluir Logs de ${confirmDelete.nome}` :
+             'Excluir Log'}
+          </h2>
+          <p style={{ color: 'var(--muted)', fontSize: '.875rem', marginBottom: 24 }}>
+            {confirmDelete.type === 'all' && 'Tem certeza que deseja excluir TODOS os logs de visualização? Esta ação não pode ser desfeita.'}
+            {confirmDelete.type === 'user' && `Tem certeza que deseja excluir todos os logs de visualização do usuário "${confirmDelete.nome}"?`}
+            {confirmDelete.type === 'single' && 'Tem certeza que deseja excluir este log?'}
+          </p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>Cancelar</button>
+            <button
+              className="btn btn-red"
+              onClick={() => {
+                if (confirmDelete.type === 'all') excluirTodosLogs();
+                else if (confirmDelete.type === 'user') excluirLogsPorUsuario(confirmDelete.usuarioId);
+                else excluirLog(confirmDelete.id);
+              }}
+            >
+              {confirmDelete.type === 'all' ? '🗑 Limpar Todos' : '🗑 Excluir'}
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 // ── View: Dashboard (MASTER_ADMIN) ───────────────────────────────────────────
 function DashboardView({ todos }) {
   const counts = {
@@ -1216,6 +1580,9 @@ export default function App() {
 
       case 'todos-chamados':
         return <ListaChamados titulo="Todos os Chamados" chamados={todos} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} />;
+
+      case 'logs-visualizacao':
+        return nivel === 'MASTER_ADMIN' ? <LogsVisualizacaoView api={api} /> : null;
 
       case 'dashboard':
         return (

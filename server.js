@@ -268,6 +268,68 @@ app.put('/api/usuarios/perfil', auth, async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+// ── Logs de Visualização (Admin) ─────────────────────────────────────────────
+app.get('/api/admin/logs-visualizacao', auth, adminOnly, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 100;
+    const offset = parseInt(req.query.offset) || 0;
+    const { rows } = await db.getAllLogsVisualizacao(limit, offset);
+    const totalResult = await db.getTotalLogsVisualizacao();
+    res.json({
+      logs: rows,
+      total: parseInt(totalResult.rows[0]?.total || 0),
+      limit,
+      offset
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/admin/logs-visualizacao/:id', auth, adminOnly, async (req, res) => {
+  try {
+    await db.deleteLogVisualizacao(req.params.id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/admin/logs-visualizacao', auth, adminOnly, async (req, res) => {
+  try {
+    const { usuarioId, all } = req.query;
+    if (all === 'true') {
+      await db.deleteAllLogsVisualizacao();
+    } else if (usuarioId) {
+      await db.deleteLogsByUser(usuarioId);
+    } else {
+      return res.status(400).json({ error: 'Parâmetro inválido' });
+    }
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/admin/logs-visualizacao/export', auth, adminOnly, async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    let logs;
+    
+    if (startDate && endDate) {
+      const result = await db.getLogsByDateRange(startDate, endDate);
+      logs = result.rows;
+    } else {
+      const result = await db.getAllLogsVisualizacao(10000, 0);
+      logs = result.rows;
+    }
+    
+    res.json({ logs });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 // ── Iniciar ───────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`✅ Servidor rodando na porta ${PORT}`));

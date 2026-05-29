@@ -3,9 +3,12 @@ const { Pool } = pkg;
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Configurar pool com timezone de Fortaleza
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: { rejectUnauthorized: false },
+  // Forçar timezone para Fortaleza apenas neste projeto
+  options: '-c timezone=America/Fortaleza'
 });
 
 export const db = {
@@ -30,8 +33,9 @@ export const db = {
   // Chamados
   createChamado: (numero, solicitanteId, descricao, criticidade, complexidade, prazoLimite) => pool.query(
     `INSERT INTO chamado_sassepe_chamados
-     (numero_chamado, id_solicitante, descricao, criticidade, complexidade, status, prazo_limite)
-     VALUES ($1, $2, $3, $4, $5, 'ABERTO', $6) RETURNING *`,
+     (numero_chamado, id_solicitante, descricao, criticidade, complexidade, status, prazo_limite, data_abertura)
+     VALUES ($1, $2, $3, $4, $5, 'ABERTO', $6, NOW())
+     RETURNING *`,
     [numero, solicitanteId, descricao, criticidade, complexidade, prazoLimite]
   ),
   getChamadosBySolicitante: (solicitanteId) => pool.query(
@@ -76,9 +80,9 @@ export const db = {
   ),
   closeChamado: (id, dataFechamento) => pool.query(
     `UPDATE chamado_sassepe_chamados
-     SET status = 'AGUARDANDO VALIDACAO', data_fechamento = $1
-     WHERE id = $2 RETURNING *`,
-    [dataFechamento, id]
+     SET status = 'AGUARDANDO VALIDACAO', data_fechamento = NOW()
+     WHERE id = $1 RETURNING *`,
+    [id]
   ),
   finalizeChamado: (id) => pool.query(
     `UPDATE chamado_sassepe_chamados SET status = 'CONCLUIDO' WHERE id = $1 RETURNING *`,
@@ -87,7 +91,7 @@ export const db = {
 
   // Histórico
   addHistorico: (chamadoId, usuarioId, acao, comentario) => pool.query(
-    'INSERT INTO chamado_sassepe_historico (id_chamado, id_usuario, acao, comentario) VALUES ($1, $2, $3, $4)',
+    'INSERT INTO chamado_sassepe_historico (id_chamado, id_usuario, acao, comentario, data_hora) VALUES ($1, $2, $3, $4, NOW())',
     [chamadoId, usuarioId, acao, comentario]
   ),
   getHistorico: (chamadoId) => pool.query(
@@ -150,10 +154,11 @@ export const db = {
     'DELETE FROM chamado_sassepe_usuarios WHERE id = $1',
     [id]
   ),
-// ── Logs de Visualização de Bandeja ───────────────────────────────────────────
+  
+  // ── Logs de Visualização de Bandeja ───────────────────────────────────────────
   registrarVisualizacaoBandeja: (usuarioId, totalChamadosVisiveis) => pool.query(
-    `INSERT INTO chamado_sassepe_logs_visualizacao_bandeja (id_usuario, total_chamados_visiveis)
-     VALUES ($1, $2)
+    `INSERT INTO chamado_sassepe_logs_visualizacao_bandeja (id_usuario, total_chamados_visiveis, data_visualizacao)
+     VALUES ($1, $2, NOW())
      RETURNING *`,
     [usuarioId, totalChamadosVisiveis]
   ),
@@ -192,4 +197,45 @@ export const db = {
      WHERE email = $1 AND id != $2`,
     [email, userId]
   ),
-  };
+  
+  // ── Logs de Visualização (Admin) ─────────────────────────────────────────────
+  getAllLogsVisualizacao: (limit = 100, offset = 0) => pool.query(
+    `SELECT l.*, u.nome_completo, u.email, c.nivel_acesso
+     FROM chamado_sassepe_logs_visualizacao_bandeja l
+     JOIN chamado_sassepe_usuarios u ON l.id_usuario = u.id
+     LEFT JOIN chamado_sassepe_cargos c ON u.id_cargo = c.id
+     ORDER BY l.data_visualizacao DESC
+     LIMIT $1 OFFSET $2`,
+    [limit, offset]
+  ),
+
+  getTotalLogsVisualizacao: () => pool.query(
+    `SELECT COUNT(*) as total FROM chamado_sassepe_logs_visualizacao_bandeja`,
+    []
+  ),
+
+  deleteLogVisualizacao: (id) => pool.query(
+    'DELETE FROM chamado_sassepe_logs_visualizacao_bandeja WHERE id = $1',
+    [id]
+  ),
+
+  deleteAllLogsVisualizacao: () => pool.query(
+    'DELETE FROM chamado_sassepe_logs_visualizacao_bandeja',
+    []
+  ),
+
+  deleteLogsByUser: (usuarioId) => pool.query(
+    'DELETE FROM chamado_sassepe_logs_visualizacao_bandeja WHERE id_usuario = $1',
+    [usuarioId]
+  ),
+
+  getLogsByDateRange: (startDate, endDate) => pool.query(
+    `SELECT l.*, u.nome_completo, u.email, c.nivel_acesso
+     FROM chamado_sassepe_logs_visualizacao_bandeja l
+     JOIN chamado_sassepe_usuarios u ON l.id_usuario = u.id
+     LEFT JOIN chamado_sassepe_cargos c ON u.id_cargo = c.id
+     WHERE l.data_visualizacao::date >= $1::date AND l.data_visualizacao::date <= $2::date
+     ORDER BY l.data_visualizacao DESC`,
+    [startDate, endDate]
+  ),
+};
