@@ -1,0 +1,193 @@
+import express from 'express';
+import cors from 'cors';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import dotenv from 'dotenv';
+import { db } from './database.js';
+
+dotenv.config();
+
+const app = express();
+app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+app.use(express.json());
+
+// ── Middleware de autenticação ────────────────────────────────────────────────
+const auth = (req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Token não fornecido' });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.id;
+    req.userNome = decoded.nome;
+    req.userNivel = decoded.nivel_acesso;
+    next();
+  } catch {
+    res.status(401).json({ error: 'Token inválido' });
+  }
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const gerarNumero = () => {
+  const d = new Date();
+  return `CH-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+};
+
+const PRAZO_HORAS = {
+  Alta:  { Alta: 16, Média: 8,  Baixa: 4  },
+  Média: { Alta: 48, Média: 24, Baixa: 12 },
+  Baixa: { Alta: 72, Média: 48, Baixa: 24 }
+};
+
+const calcularPrazo = (crit, comp) => new Date(Date.now() + PRAZO_HORAS[crit][comp] * 3_600_000);
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+app.post('/api/login', async (req, res) => {
+  try {
+    const { identifier, senha } = req.body;
+    const { rows } = await db.findUserByEmail(identifier);
+    if (!rows.length) return res.status(401).json({ error: 'Credenciais inválidas' });
+    const user = rows[0];
+    if (!await bcrypt.compare(senha, user.senha_hash)) return res.status(401).json({ error: 'Credenciais inválidas' });
+
+    // Buscar cargo/nível do usuário
+    const cargoResult = await db.getCargoByUserId(user.id);
+    const nivel_acesso = cargoResult.rows[0]?.nivel_acesso || 'SOLICITANTE';
+
+    const token = jwt.sign(
+      { id: user.id, nome: user.nome_completo, nivel_acesso },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+    res.json({
+      token,
+      user: { id: user.id, nome: user.nome_completo, email: user.email, nivel_acesso }
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Chamados ──────────────────────────────────────────────────────────────────
+app.post('/api/chamados', auth, async (req, res) => {
+  try {
+    const { descricao, criticidade, complexidade } = req.body;
+    const numero = gerarNumero();
+    const prazo = calcularPrazo(criticidade, complexidade);
+    const { rows } = await db.createChamado(numero, req.userId, descricao, criticidade, complexidade, prazo);
+    await db.addHistorico(rows[0].id, req.userId, 'ABERTURA', `Chamado aberto — Criticidade: ${criticidade} | Complexidade: ${complexidade}`);
+    res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/chamados/meus', auth, async (req, res) => {
+  const { rows } = await db.getChamadosBySolicitante(req.userId);
+  res.json(rows);
+});
+
+app.get('/api/chamados/disponiveis', auth, async (req, res) => {
+  const { rows } = await db.getAllChamadosAbertos();
+  res.json(rows);
+});
+
+app.get('/api/chamados/todos', auth, async (req, res) => {
+  // Apenas MASTER_ADMIN
+  if (req.userNivel !== 'MASTER_ADMIN') return res.status(403).json({ error: 'Acesso negado' });
+  const { rows } = await db.getAllChamados();
+  res.json(rows);
+});
+
+app.put('/api/chamados/:id/assumir', auth, async (req, res) => {
+  try {
+    const { rows } = await db.assignResponsavel(req.params.id, req.userId);
+    await db.addHistorico(req.params.id, req.userId, 'ATRIBUICAO', `Chamado assumido por ${req.userNome}`);
+    res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/chamados/:id/fechar', auth, async (req, res) => {
+  try {
+    const { descricaoResolucao } = req.body;
+    const { rows } = await db.closeChamado(req.params.id, new Date());
+    await db.addHistorico(req.params.id, req.userId, 'RESOLUCAO', descricaoResolucao);
+    res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/chamados/:id/validar', auth, async (req, res) => {
+  try {
+    const { aprovado } = req.body;
+    if (aprovado) {
+      await db.finalizeChamado(req.params.id);
+    } else {
+      await db.updateStatus(req.params.id, 'EM ANALISE');
+    }
+    await db.addHistorico(
+      req.params.id, req.userId,
+      aprovado ? 'APROVACAO' : 'RECUSA',
+      aprovado ? 'Solicitante aprovou a resolução — chamado encerrado' : 'Solicitante recusou a resolução — chamado reaberto'
+    );
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/chamados/:id/historico', auth, async (req, res) => {
+  const { rows } = await db.getHistorico(req.params.id);
+  res.json(rows);
+});
+
+// ── Usuários (MASTER_ADMIN) ───────────────────────────────────────────────────
+const adminOnly = (req, res, next) => {
+  if (req.userNivel !== 'MASTER_ADMIN') return res.status(403).json({ error: 'Acesso negado' });
+  next();
+};
+
+app.get('/api/usuarios', auth, adminOnly, async (req, res) => {
+  try {
+    const { rows } = await db.getAllUsuarios();
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/usuarios', auth, adminOnly, async (req, res) => {
+  try {
+    const { nome_completo, email, senha, nivel_acesso, ativo = true } = req.body;
+    if (!nome_completo || !email || !senha) return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios.' });
+    const senha_hash = await bcrypt.hash(senha, 10);
+    const { rows } = await db.createUsuario(
+      nome_completo, email, senha_hash,
+      nivel_acesso || 'SOLICITANTE',
+      ativo
+    );
+    res.json(rows[0]);
+  } catch (e) {
+    if (e.code === '23505') return res.status(409).json({ error: 'E-mail já cadastrado.' });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.put('/api/usuarios/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const { nome_completo, email, senha, nivel_acesso, ativo } = req.body;
+    let result;
+    if (senha && senha.trim()) {
+      const senha_hash = await bcrypt.hash(senha.trim(), 10);
+      result = await db.updateUsuarioComSenha(req.params.id, nome_completo, email, senha_hash, nivel_acesso, ativo);
+    } else {
+      result = await db.updateUsuario(req.params.id, nome_completo, email, nivel_acesso, ativo);
+    }
+    res.json(result.rows[0]);
+  } catch (e) {
+    if (e.code === '23505') return res.status(409).json({ error: 'E-mail já cadastrado.' });
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/usuarios/:id', auth, adminOnly, async (req, res) => {
+  try {
+    await db.deleteUsuario(req.params.id);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Iniciar ───────────────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`✅ Servidor rodando na porta ${PORT}`));
