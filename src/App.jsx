@@ -38,91 +38,628 @@ const formatLocalDate = (dateStr) => {
 
 const fmt = d => d ? formatLocalDate(d) : '—';
 
-// ── CSS global ────────────────────────────────────────────────────────────────
+// ================================================================
+// NOVO CSS GLOBAL — Estética iMaida
+// ================================================================
 const G = `
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
   :root {
-    --bg: #F0EEE9; --surface: #FAFAF8; --border: #E2DDD6;
-    --text: #1A1714; --muted: #8C8680;
-    --accent: #C4501A; --accent2: #1A4CC4; --ink: #1A1714;
-    --radius: 12px;
-    --shadow: 0 1px 3px rgba(26,23,20,.06), 0 4px 16px rgba(26,23,20,.08);
-    --shadow-lg: 0 8px 32px rgba(26,23,20,.14);
+    /* Brand Colors */
+    --maida-blue:        #0070ff;
+    --maida-blue-deep:   #004aad;
+    --maida-blue-soft:   #e6f0ff;
+    --maida-pink:        #ff0073;
+    --maida-pink-soft:   #ffe1ee;
+    --maida-yellow:      #ffcc00;
+    --maida-yellow-soft: #fff8d6;
+    --maida-dark-blue:   #004aad;
+
+    /* Ink (texto) */
+    --ink:        #0a0e1a;
+    --ink-soft:   #4a5168;
+    --ink-faint:  #8893a8;
+    --ink-mute:   #c5cbd6;
+
+    /* Paper (fundos) */
+    --paper:      #fafbfd;
+    --paper-pure: #ffffff;
+    --line:       #eef0f5;
+    --line-soft:  #f4f6fa;
+    --border-color: #eef0f5;
+
+    /* Rounded */
+    --r-sm:   10px;
+    --r:      18px;
+    --r-lg:   26px;
+    --r-xl:   36px;
+    --r-full: 9999px;
+    --radius: 18px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+    --shadow:    0 4px 12px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 8px 20px -4px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 24px 48px -12px rgba(15, 23, 42, 0.10), 0 8px 16px -8px rgba(15, 23, 42, 0.04);
+    --shadow-pink: 0 12px 32px -8px rgba(255, 0, 115, 0.30);
+    --shadow-blue: 0 12px 32px -8px rgba(0, 112, 255, 0.28);
+
+    /* Motion */
+    --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --transition:  all 0.2s var(--ease-out);
   }
-  body { background: var(--bg); font-family: 'DM Sans', sans-serif; color: var(--text); min-height: 100vh; }
-  h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
-  button { cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .18s; }
-  input, textarea, select { font-family: 'DM Sans', sans-serif; }
-  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 9999px; border: none; font-size: .875rem; font-weight: 600; }
-  .btn-dark  { background: var(--ink); color: #fff; }
-  .btn-dark:hover  { background: #2d2926; transform: translateY(-1px); }
-  .btn-accent{ background: var(--accent); color: #fff; }
-  .btn-accent:hover{ background: #a84016; transform: translateY(-1px); }
-  .btn-blue  { background: var(--accent2); color: #fff; }
-  .btn-blue:hover  { background: #1640a8; transform: translateY(-1px); }
-  .btn-green { background: #10B981; color: #fff; }
-  .btn-green:hover { background: #059669; transform: translateY(-1px); }
-  .btn-red   { background: #EF4444; color: #fff; }
-  .btn-red:hover   { background: #DC2626; transform: translateY(-1px); }
-  .btn-ghost { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
-  .btn-ghost:hover { background: var(--border); }
-  .btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--shadow); }
-  .input-field { width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: .9375rem; background: var(--bg); color: var(--text); outline: none; transition: border-color .15s; }
-  .input-field:focus { border-color: var(--accent); }
-  .label { display: block; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; font-family: 'Syne', sans-serif; }
-  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 9999px; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
 
-  .modal-overlay { position: fixed; inset: 0; background: rgba(26,23,20,.5); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn .15s ease; }
-  .modal { background: var(--surface); border-radius: 20px; padding: 32px; width: 100%; max-width: 560px; box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto; animation: slideUp .2s ease; }
-  @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
-  @keyframes slideUp { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
+  /* Mesh decorativo no fundo */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(at 5% 8%, rgba(0, 112, 255, 0.05) 0px, transparent 50%),
+      radial-gradient(at 95% 92%, rgba(255, 0, 115, 0.04) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, rgba(255, 204, 0, 0.025) 0px, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
 
-  .chamado-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; transition: box-shadow .2s, transform .2s; }
-  .chamado-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+  h1, h2, h3, h4, h5 {
+    font-family: 'Bricolage Grotesque', 'Inter', sans-serif;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: var(--ink);
+  }
 
-  .hist-line { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
-  .hist-line:last-child { border-bottom: none; }
-  .hist-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d6dce6; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--maida-blue); }
 
-  .crit-card { border: 2px solid transparent; border-radius: var(--radius); padding: 14px; cursor: pointer; transition: all .15s; background: var(--bg); }
-  .crit-card.selected { background: var(--surface); box-shadow: var(--shadow); }
-  .crit-card:hover { transform: translateY(-1px); }
+  ::selection { background: var(--maida-blue); color: white; }
 
-  .crit-balloon { border-radius: var(--radius); padding: 14px 16px; margin-top: 12px; border-left: 4px solid; animation: slideUp .2s ease; }
+  /* Layout */
+  .app-layout { display: flex; min-height: 100vh; position: relative; z-index: 1; }
 
-  .sla-box { background: linear-gradient(135deg, #1A1714 0%, #2d2926 100%); color: #fff; border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: center; gap: 16px; }
+  /* Sidebar */
+  .sidebar {
+    width: 280px;
+    background: var(--paper-pure);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px;
+    border-right: 1px solid var(--line);
+    flex-shrink: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+  }
 
-  .tab-btn { padding: 8px 20px; border-radius: 9999px; border: none; font-size: .875rem; font-weight: 600; background: transparent; color: var(--muted); transition: all .15s; font-family: 'Syne', sans-serif; }
-  .tab-btn.active { background: var(--ink); color: #fff; }
-  .tab-btn:hover:not(.active) { background: var(--border); color: var(--text); }
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    padding: 0 8px;
+  }
 
-  .app-layout { display: flex; min-height: 100vh; }
-  .sidebar { width: 240px; flex-shrink: 0; background: var(--ink); color: #fff; display: flex; flex-direction: column; padding: 28px 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
-  .sidebar-logo { padding: 0 24px 28px; border-bottom: 1px solid rgba(255,255,255,.1); margin-bottom: 16px; }
-  .sidebar-logo h1 { font-size: 1rem; font-family: 'Syne', sans-serif; font-weight: 700; line-height: 1.3; }
-  .sidebar-logo p  { font-size: .75rem; opacity: .5; margin-top: 4px; }
-  .nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 24px; font-size: .875rem; font-weight: 500; color: rgba(255,255,255,.6); cursor: pointer; transition: all .15s; border: none; background: none; width: 100%; text-align: left; }
-  .nav-item:hover { background: rgba(255,255,255,.06); color: #fff; }
-  .nav-item.active { background: rgba(255,255,255,.12); color: #fff; border-right: 3px solid var(--accent); }
-  .nav-section { padding: 8px 24px 4px; font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.3); margin-top: 8px; font-family: 'Syne', sans-serif; }
-  .sidebar-footer { margin-top: auto; padding: 16px 24px; border-top: 1px solid rgba(255,255,255,.1); }
-  .sidebar-user { font-size: .8rem; opacity: .7; margin-bottom: 10px; line-height: 1.4; }
-  .main-content { margin-left: 240px; flex: 1; padding: 32px; max-width: calc(100vw - 240px); }
+  .sidebar-logo h1 {
+    font-family: 'Bricolage Grotesque';
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
 
-  .nivel-badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
+  .brand-pink { color: var(--maida-pink); }
+  .brand-blue { color: var(--maida-blue); }
 
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
-  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
-  .stat-num  { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; line-height: 1; }
-  .stat-lbl  { font-size: .75rem; color: var(--muted); margin-top: 4px; }
+  .nav-section {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 20px 0 6px 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .nav-item {
+    padding: 10px 14px;
+    text-decoration: none;
+    color: var(--ink-soft);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: var(--transition);
+    font-weight: 500;
+    font-size: 0.92rem;
+    background: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    border: none;
+  }
+
+  .nav-item svg { width: 18px; height: 18px; stroke-width: 1.8; }
+
+  .nav-item:hover { background: var(--line-soft); color: var(--ink); }
+
+  .nav-item.active {
+    background: var(--ink);
+    color: white;
+    font-weight: 600;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+
+  .nav-item.active::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background: var(--maida-pink);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--maida-pink);
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+  }
+
+  .sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 11px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    margin-bottom: 16px;
+  }
+
+  .avatar {
+    width: 38px;
+    height: 38px;
+    background: linear-gradient(135deg, var(--maida-blue), var(--maida-pink));
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-weight: 600; font-size: 0.86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .user-email { font-size: 0.72rem; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .nivel-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: .65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  /* Main Content */
+  .main-content {
+    margin-left: 280px;
+    flex: 1;
+    padding: 32px 40px;
+    overflow-y: auto;
+    background: radial-gradient(at 100% 0%, var(--maida-pink-soft) 0px, transparent 35%),
+                radial-gradient(at 0% 100%, var(--maida-blue-soft) 0px, transparent 35%),
+                var(--paper);
+    min-width: 0;
+    height: 100vh;
+  }
+
+  /* Top Bar */
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    gap: 16px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+
+  .page-title {
+    font-family: 'Bricolage Grotesque';
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 22px;
+    border-radius: var(--r-full);
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: var(--transition);
+    cursor: pointer;
+    border: none;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .btn-primary {
+    background: var(--ink);
+    color: white;
+    box-shadow: var(--shadow);
+  }
+
+  .btn-primary:hover { background: var(--maida-blue); transform: translateY(-1px); box-shadow: var(--shadow-blue); }
+
+  .btn-secondary {
+    background: white;
+    color: var(--ink-soft);
+    border: 1.5px solid var(--line);
+  }
+
+  .btn-secondary:hover { background: var(--paper); color: var(--ink); border-color: var(--ink-mute); }
+
+  .btn-danger {
+    background: white;
+    color: var(--maida-pink);
+    border: 1.5px solid var(--maida-pink-soft);
+  }
+
+  .btn-danger:hover { background: var(--maida-pink); color: white; border-color: var(--maida-pink); }
+
+  .btn-success {
+    background: #10B981;
+    color: #fff;
+  }
+  .btn-success:hover { background: #059669; transform: translateY(-1px); }
+
+  .btn-warning {
+    background: #F59E0B;
+    color: #fff;
+  }
+  .btn-warning:hover { background: #D97706; transform: translateY(-1px); }
+
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    border: 1px solid var(--line);
+    background: white;
+    color: var(--ink-soft);
+    transition: var(--transition);
+    cursor: pointer;
+  }
+
+  .btn-icon:hover { background: var(--maida-blue); color: white; border-color: var(--maida-blue); }
+
+  /* Cards */
+  .card {
+    background: var(--paper-pure);
+    padding: 24px;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--line);
+    margin-bottom: 22px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Stats Grid */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+    margin-bottom: 26px;
+  }
+
+  .stat-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 22px;
+    background: var(--paper-pure);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out);
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.5;
+    pointer-events: none;
+    transition: opacity 0.4s;
+    background: radial-gradient(circle at 85% 15%, var(--maida-blue-soft) 0%, transparent 55%);
+  }
+
+  .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+  .stat-card:hover::before { opacity: 1; }
+
+  .stat-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    background: var(--maida-blue);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 6px 14px -4px rgba(0, 112, 255, 0.45);
+    flex-shrink: 0;
+  }
+
+  .stat-data { position: relative; z-index: 2; }
+  .stat-number { font-family: 'Bricolage Grotesque'; font-size: 2.2rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; color: var(--ink); margin-bottom: 3px; }
+  .stat-label { color: var(--ink-soft); font-size: 0.85rem; font-weight: 500; margin: 0; }
+
+  /* Ticket Cards com Corner Cutout */
+  .tickets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 22px;
+  }
+
+  .chamado-card {
+    --accent: var(--maida-blue);
+    background: var(--paper-pure);
+    border-radius: var(--r-lg);
+    padding: 24px;
+    position: relative;
+    border: 1px solid var(--line);
+    transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out);
+    display: flex;
+    flex-direction: column;
+    isolation: isolate;
+  }
+
+  .chamado-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+
+  /* Corner Cutout */
+  .chamado-card .corner {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--paper);
+    padding: 10px 10px 0 0;
+    border-bottom-left-radius: 22px;
+    display: flex;
+    gap: 8px;
+    z-index: 3;
+  }
+
+  .chamado-card .corner::before,
+  .chamado-card .corner::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background: transparent;
+  }
+
+  .chamado-card .corner::before {
+    top: 0;
+    right: 100%;
+    border-top-right-radius: 18px;
+    box-shadow: 6px -6px 0 var(--paper);
+  }
+
+  .chamado-card .corner::after {
+    top: 100%;
+    right: 0;
+    border-top-right-radius: 18px;
+    box-shadow: 6px -6px 0 var(--paper);
+  }
+
+  /* Faixa lateral de status */
+  .chamado-card::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 24px;
+    bottom: 24px;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 0 3px 3px 0;
+    opacity: 0.8;
+  }
+
+  .chamado-card.sla-ok { --accent: var(--maida-blue); }
+  .chamado-card.sla-vencido { --accent: var(--maida-pink); }
+
+  .ticket-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+
+  .ticket-id {
+    background: #5b6eab;
+    padding: 3px 10px 3px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.7rem;
+    color: #ffffff;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: var(--r-full);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .ticket-title {
+    font-family: 'Bricolage Grotesque';
+    font-size: 1.15rem;
+    font-weight: 600;
+    line-height: 1.25;
+    margin-bottom: 12px;
+    color: var(--ink);
+  }
+
+  .ticket-desc {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+    flex: 1;
+    margin-bottom: 16px;
+  }
+
+  .ticket-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 16px;
+    margin-top: auto;
+    border-top: 1px dashed var(--line);
+    gap: 12px;
+    font-size: 12px;
+  }
+
+  /* Inputs */
+  .input-field {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    font-size: 0.92rem;
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+    transition: var(--transition);
+    background: white;
+    outline: none;
+  }
+
+  .input-field:focus { border-color: var(--maida-blue); box-shadow: 0 0 0 4px var(--maida-blue-soft); }
+
+  textarea.input-field { resize: vertical; min-height: 80px; line-height: 1.55; }
+
+  .label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    color: var(--ink-soft);
+  }
+
+  /* Modais */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 26, 0.45);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .modal {
+    background: white;
+    width: 560px;
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: var(--r-lg);
+    transform: translateY(20px) scale(0.96);
+    transition: transform 0.4s var(--ease-spring);
+    box-shadow: 0 30px 80px -20px rgba(10, 14, 26, 0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .modal-overlay .modal {
+    transform: translateY(0) scale(1);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 26px;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .modal-header h2 { font-size: 1.25rem; margin: 0; }
+
+  .modal-body { flex: 1; overflow-y: auto; padding: 24px 26px; }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .sidebar {
+      position: fixed;
+      left: -290px;
+      transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1000;
+    }
+    .sidebar.open { left: 0; }
+    .main-content { margin-left: 0; width: 100%; padding: 24px; }
+    .stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  }
+
+  @media (max-width: 768px) {
+    .stat-grid { grid-template-columns: 1fr !important; }
+    .tickets-grid { grid-template-columns: 1fr; }
+    .top-bar .btn-primary { display: none; }
+    .main-content { padding: 18px; }
+    .page-title { font-size: 1.4rem; }
+  }
 `;
 
-// ── Componentes base ──────────────────────────────────────────────────────────
+// ── Componentes iMaida ──────────────────────────────────────────────────────────
+
 function Badge({ label, color }) {
   return <span className="badge" style={{ background: color + '20', color }}>{label}</span>;
 }
@@ -143,12 +680,14 @@ function Modal({ children, onClose }) {
 function SlaBox({ crit, comp }) {
   const { horas, data } = calcPrazo(crit, comp);
   return (
-    <div className="sla-box">
-      <div style={{ fontSize: '1.75rem' }}>⏱</div>
-      <div>
-        <div style={{ fontSize: '.7rem', opacity: .7, fontFamily: 'Syne', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 2 }}>Prazo SLA</div>
-        <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{data.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })}</div>
-        <div style={{ fontSize: '.8rem', opacity: .65, marginTop: 2 }}>{horas}h a partir da abertura</div>
+    <div className="card" style={{ background: 'linear-gradient(135deg, #1A1714 0%, #2d2926 100%)', color: '#fff', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ fontSize: '1.75rem' }}>⏱</div>
+        <div>
+          <div style={{ fontSize: '.7rem', opacity: .7, fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>Prazo SLA</div>
+          <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{data.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })}</div>
+          <div style={{ fontSize: '.8rem', opacity: .65, marginTop: 2 }}>{horas}h a partir da abertura</div>
+        </div>
       </div>
     </div>
   );
@@ -156,15 +695,15 @@ function SlaBox({ crit, comp }) {
 
 function CriticidadeBalloon({ crit }) {
   if (!crit) return null;
-  const info  = CRITICIDADE_INFO[crit];
+  const info = CRITICIDADE_INFO[crit];
   const color = CRIT_COLOR[crit];
   return (
-    <div className="crit-balloon" style={{ background: color + '12', borderColor: color }}>
+    <div className="card" style={{ background: color + '12', borderColor: color, marginTop: 12, padding: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
         <span>{info.icon}</span>
         <strong style={{ fontSize: '.875rem', color }}>{info.label}</strong>
       </div>
-      <p style={{ fontSize: '.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>{info.desc}</p>
+      <p style={{ fontSize: '.8125rem', color: 'var(--ink-soft)', lineHeight: 1.5 }}>{info.desc}</p>
     </div>
   );
 }
@@ -193,32 +732,34 @@ function HistoricoModal({ chamado, onClose, api }) {
   
   return (
     <Modal onClose={onClose}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+      <div className="modal-header">
         <div>
-          <div className="label" style={{ marginBottom: 4 }}>Histórico do Chamado</div>
-          <h2 style={{ fontSize: '1.125rem' }}>{chamado.numero_chamado}</h2>
+          <div className="label">Histórico do Chamado</div>
+          <h2>{chamado.numero_chamado}</h2>
         </div>
-        <button className="btn btn-ghost" style={{ padding: '5px 12px' }} onClick={onClose}>✕</button>
+        <button className="btn-icon" onClick={onClose}>✕</button>
       </div>
-      <div style={{ padding: '12px 14px', background: 'var(--bg)', borderRadius: 'var(--radius)', fontSize: '.875rem', color: 'var(--muted)', marginBottom: 20, lineHeight: 1.5 }}>
-        {chamado.descricao}
-      </div>
-      {loading ? <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 20 }}>Carregando…</p> : hist.map((h, i) => {
-        const meta = ACAO_META[h.acao] || { icon: '•', label: h.acao, color: 'var(--muted)' };
-        return (
-          <div key={i} className="hist-line">
-            <div className="hist-dot" style={{ background: meta.color }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                <span style={{ fontWeight: 600, fontSize: '.875rem' }}>{meta.icon} {meta.label}</span>
-                <span style={{ fontSize: '.75rem', color: 'var(--muted)' }}>{fmt(h.data_hora)}</span>
+      <div className="modal-body">
+        <div className="card" style={{ padding: 12, marginBottom: 20, background: 'var(--paper)' }}>
+          {chamado.descricao}
+        </div>
+        {loading ? <p style={{ textAlign: 'center', padding: 20 }}>Carregando…</p> : hist.map((h, i) => {
+          const meta = ACAO_META[h.acao] || { icon: '•', label: h.acao, color: 'var(--ink-mute)' };
+          return (
+            <div key={i} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', marginTop: 6, background: meta.color, flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                  <span style={{ fontWeight: 600, fontSize: '.875rem' }}>{meta.icon} {meta.label}</span>
+                  <span style={{ fontSize: '.75rem', color: 'var(--ink-faint)' }}>{fmt(h.data_hora)}</span>
+                </div>
+                <div style={{ fontSize: '.8rem', color: 'var(--ink-soft)', marginBottom: 4 }}>por {h.nome_completo}</div>
+                {h.comentario && <div className="card" style={{ padding: 8, background: 'var(--paper)', marginTop: 4 }}>{h.comentario}</div>}
               </div>
-              <div style={{ fontSize: '.8rem', color: 'var(--muted)', marginBottom: 4 }}>por {h.nome_completo}</div>
-              {h.comentario && <div style={{ fontSize: '.875rem', padding: '8px 12px', background: 'var(--bg)', borderRadius: 8 }}>{h.comentario}</div>}
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </Modal>
   );
 }
@@ -227,111 +768,113 @@ function ResolucaoModal({ chamado, onClose, onConfirm }) {
   const [texto, setTexto] = useState('');
   return (
     <Modal onClose={onClose}>
-      <h2 style={{ marginBottom: 6 }}>Finalizar Atendimento</h2>
-      <p style={{ color: 'var(--muted)', fontSize: '.875rem', marginBottom: 20 }}>
-        Descreva a solução aplicada. O solicitante deverá validar antes do chamado ser encerrado.
-      </p>
-      <div style={{ marginBottom: 20 }}>
-        <label className="label">Descrição da Resolução</label>
-        <textarea className="input-field" rows={5} value={texto} onChange={e => setTexto(e.target.value)}
-          placeholder="Descreva detalhadamente o que foi feito…" style={{ resize: 'vertical' }} />
+      <div className="modal-header">
+        <h2>Finalizar Atendimento</h2>
+        <button className="btn-icon" onClick={onClose}>✕</button>
       </div>
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-        <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-        <button className="btn btn-green" disabled={!texto.trim()} onClick={() => onConfirm(texto)}>✅ Enviar para Validação</button>
+      <div className="modal-body">
+        <p style={{ color: 'var(--ink-soft)', marginBottom: 20 }}>Descreva a solução aplicada. O solicitante deverá validar antes do chamado ser encerrado.</p>
+        <div style={{ marginBottom: 20 }}>
+          <label className="label">Descrição da Resolução</label>
+          <textarea className="input-field" rows={5} value={texto} onChange={e => setTexto(e.target.value)} placeholder="Descreva detalhadamente o que foi feito…" />
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-success" disabled={!texto.trim()} onClick={() => onConfirm(texto)}>✅ Enviar para Validação</button>
+        </div>
       </div>
     </Modal>
   );
 }
 
-// ── Card de Chamado (Funcionalidade App.jsx + Estética Estética.jsx) ──────────
+// ── Card de Chamado (Estilo iMaida com Corner Cutout) ──────────────────────────
 function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHistorico }) {
   const isMeu       = `${c.id_solicitante}` === `${userId}`;
   const isResp      = `${c.id_responsavel}` === `${userId}`;
   const vencido     = c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO';
   const podeAssumir = !c.id_responsavel && !isMeu && (nivel === 'TECNICO' || nivel === 'MASTER_ADMIN');
-
+  
+  let slaClass = 'sla-ok';
+  if (vencido) slaClass = 'sla-vencido';
+  
+  const statusColor = STATUS_COLOR[c.status] || '#888';
+  
+  // Corner buttons
+  let cornerButtons = '';
+  const podeEditar = (isMeu || nivel === 'MASTER_ADMIN') && c.status !== 'CONCLUIDO';
+  
+  if (podeEditar) {
+    cornerButtons += `<button class="btn-icon" style="width: 32px; height: 32px;" onclick="window.dispatchEvent(new CustomEvent('editarChamado', { detail: ${c.id} }))"><i class="fa-regular fa-pen-to-square"></i></button>`;
+  }
+  if (podeAssumir) {
+    cornerButtons += `<button class="btn-icon" style="width: 32px; height: 32px; background: var(--maida-blue); color: white;" onclick="window.dispatchEvent(new CustomEvent('assumirChamado', { detail: ${c.id} }))"><i class="fa-solid fa-hand-holding-hand"></i></button>`;
+  }
+  if ((isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE') {
+    cornerButtons += `<button class="btn-icon" style="width: 32px; height: 32px; background: var(--maida-blue); color: white;" onclick="window.dispatchEvent(new CustomEvent('fecharChamado', { detail: ${c.id} }))"><i class="fa-solid fa-check"></i></button>`;
+  }
+  if (isMeu && c.status === 'AGUARDANDO VALIDACAO') {
+    cornerButtons += `<button class="btn-icon" style="width: 32px; height: 32px; background: #10B981; color: white;" onclick="window.dispatchEvent(new CustomEvent('aprovarChamado', { detail: ${c.id} }))"><i class="fa-solid fa-thumbs-up"></i></button>`;
+    cornerButtons += `<button class="btn-icon" style="width: 32px; height: 32px; background: #EF4444; color: white;" onclick="window.dispatchEvent(new CustomEvent('rejeitarChamado', { detail: ${c.id} }))"><i class="fa-solid fa-thumbs-down"></i></button>`;
+  }
+  
+  // Para permitir cliques nos botões sem acionar o card
+  useEffect(() => {
+    const handleAssumir = (e) => { if (e.detail === c.id) onAssumir(c.id); };
+    const handleFechar = (e) => { if (e.detail === c.id) onFechar(c); };
+    const handleAprovar = (e) => { if (e.detail === c.id) onValidar(c.id, true); };
+    const handleRejeitar = (e) => { if (e.detail === c.id) onValidar(c.id, false); };
+    
+    window.addEventListener('assumirChamado', handleAssumir);
+    window.addEventListener('fecharChamado', handleFechar);
+    window.addEventListener('aprovarChamado', handleAprovar);
+    window.addEventListener('rejeitarChamado', handleRejeitar);
+    
+    return () => {
+      window.removeEventListener('assumirChamado', handleAssumir);
+      window.removeEventListener('fecharChamado', handleFechar);
+      window.removeEventListener('aprovarChamado', handleAprovar);
+      window.removeEventListener('rejeitarChamado', handleRejeitar);
+    };
+  }, [c.id, onAssumir, onFechar, onValidar]);
+  
   return (
-    <div className="chamado-card" style={{ borderLeft: `4px solid ${STATUS_COLOR[c.status] || '#ccc'}`, padding: '12px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 8,
-          background: '#5b6eab',
-          padding: '3px 10px 3px 8px',
-          borderRadius: '6px'
-        }}>
-          <span style={{ fontSize: '.65rem', fontWeight: 600, color: '#ffffff', letterSpacing: '0.5px' }}>
-            TICKET:
-          </span>
-          <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: '.85rem', color: '#ffffff' }}>
-            {c.numero_chamado}
-          </span>
-        </div>
-        
-        <button 
-            className="btn btn-ghost" 
-            style={{ 
-              padding: '2px 8px', 
-              fontSize: '.7rem', 
-              height: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }} 
-            onClick={() => onHistorico(c)}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-            Histórico
-          </button>
+    <div className={`chamado-card ${slaClass}`}>
+      <div className="corner" dangerouslySetInnerHTML={{ __html: cornerButtons }} />
+      
+      <div className="ticket-header">
+        <div className="ticket-id">TICKET: {c.numero_chamado}</div>
+        <button className="btn-icon" style={{ width: '28px', height: '28px', fontSize: '0.7rem' }} onClick={() => onHistorico(c)}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+        </button>
       </div>
 
-      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
         <Badge label={c.criticidade} color={CRIT_COLOR[c.criticidade]} />
         <Badge label={`Compl. ${c.complexidade}`} color="#6B7280" />
-        <Badge label={STATUS_LABEL[c.status] || c.status} color={STATUS_COLOR[c.status] || '#888'} />
+        <Badge label={STATUS_LABEL[c.status] || c.status} color={statusColor} />
         {vencido && <Badge label="⚠ SLA" color="#EF4444" />}
       </div>
 
-      <div style={{ fontSize: '.8rem', marginBottom: 8, lineHeight: 1.4, color: 'var(--text)' }}>
-        {c.descricao.length > 100 ? c.descricao.substring(0, 100) + '...' : c.descricao}
-      </div>
+      <div className="ticket-title">{c.descricao.length > 80 ? c.descricao.substring(0, 80) + '...' : c.descricao}</div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: '.7rem', color: 'var(--muted)', marginBottom: 10 }}>
-        <div><strong style={{ color: 'var(--text)' }}>Solicitante</strong><br/>{c.solicitante_nome?.split(' ')[0] || c.solicitante_nome}</div>
-        <div><strong style={{ color: 'var(--text)' }}>Responsável</strong><br/>{c.responsavel_nome?.split(' ')[0] || c.responsavel_nome || '—'}</div>
-        <div><strong style={{ color: 'var(--text)' }}>Abertura</strong><br/>{fmt(c.data_abertura)}</div>
-        <div><strong style={{ color: vencido ? '#EF4444' : 'var(--text)' }}>SLA</strong><br/>{fmt(c.prazo_limite)}</div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {podeAssumir && (
-          <button className="btn btn-blue" style={{ fontSize: '.7rem', padding: '4px 10px' }} onClick={() => onAssumir(c.id)}>
-            Assumir
-          </button>
-        )}
-        {(isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE' && (
-          <button className="btn btn-dark" style={{ fontSize: '.7rem', padding: '4px 10px' }} onClick={() => onFechar(c)}>
-            Finalizar
-          </button>
-        )}
-        {/* Usando onValidar de App.jsx integrado aos botões visualmente atualizados */}
-        {isMeu && c.status === 'AGUARDANDO VALIDACAO' && (
-          <>
-            <button className="btn btn-green" style={{ fontSize: '.7rem', padding: '4px 10px' }} onClick={() => onValidar(c.id, true)}>✓ Aprovar Resolução</button>
-            <button className="btn btn-red"   style={{ fontSize: '.7rem', padding: '4px 10px' }} onClick={() => onValidar(c.id, false)}>✗ Recusar / Reabrir</button>
-          </>
-        )}
+      <div className="ticket-footer">
+        <div>
+          <div><strong>Solicitante:</strong> {c.solicitante_nome?.split(' ')[0] || c.solicitante_nome}</div>
+          <div style={{ fontSize: '11px', color: 'var(--ink-faint)' }}>Aberto: {fmt(c.data_abertura)}</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div><strong>Responsável:</strong> {c.responsavel_nome?.split(' ')[0] || c.responsavel_nome || '—'}</div>
+          <div style={{ fontSize: '11px', color: vencido ? '#EF4444' : 'var(--ink-faint)' }}>SLA: {fmt(c.prazo_limite)}</div>
+        </div>
       </div>
     </div>
   );
 }
 
-// ── Tela de Login ─────────────────────────────────────────────────────────────
+// ── Tela de Login (Estilizada iMaida) ─────────────────────────────────────────
 function LoginScreen({ onLogin }) {
   const [data, setData]   = useState({ identifier: '', senha: '' });
   const [erro, setErro]   = useState('');
@@ -349,12 +892,13 @@ function LoginScreen({ onLogin }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 20 }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--paper)', padding: 20, position: 'relative', zIndex: 1 }}>
       <div style={{ width: 420, maxWidth: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={{ width: 52, height: 52, background: 'var(--ink)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', margin: '0 auto 14px' }}>📋</div>
-          <h1 style={{ fontSize: '1.625rem', marginBottom: 4 }}>Central de Chamados</h1>
-          <p style={{ color: 'var(--muted)', fontSize: '.875rem' }}>SASSEPE — Área Técnica</p>
+          <div className="sidebar-logo" style={{ justifyContent: 'center', padding: 0 }}>
+            <h1><span className="brand-pink">i</span><span className="brand-blue">Maida</span></h1>
+          </div>
+          <p style={{ color: 'var(--ink-soft)', fontSize: '.875rem' }}>Central de Chamados — Área Técnica</p>
         </div>
         <div className="card">
           <form onSubmit={submit}>
@@ -369,7 +913,7 @@ function LoginScreen({ onLogin }) {
                 value={data.senha} onChange={e => setData({ ...data, senha: e.target.value })} placeholder="••••••••" />
             </div>
             {erro && <div style={{ color: '#EF4444', fontSize: '.875rem', marginBottom: 16, padding: '10px 14px', background: '#FEF2F2', borderRadius: 8 }}>{erro}</div>}
-            <button className="btn btn-dark" style={{ width: '100%', justifyContent: 'center', padding: 13 }} disabled={loading} type="submit">
+            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: 13 }} disabled={loading} type="submit">
               {loading ? 'Entrando…' : 'Entrar'}
             </button>
           </form>
@@ -379,7 +923,7 @@ function LoginScreen({ onLogin }) {
   );
 }
 
-// ── Sidebar (Rotas App.jsx + Ícones SVGs Estética.jsx) ────────────────────────
+// ── Sidebar (Estilo iMaida) ───────────────────────────────────────────────────
 const NIVEL_META = {
   SOLICITANTE:  { label: 'Solicitante',  color: '#F59E0B' },
   TECNICO:      { label: 'Técnico',      color: '#3B82F6' },
@@ -390,27 +934,26 @@ function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
   const nivel = user?.nivel_acesso || 'SOLICITANTE';
   const meta  = NIVEL_META[nivel] || NIVEL_META.SOLICITANTE;
 
-  // Utilizamos as rotas mantidas em App.jsx combinadas com os ícones de Estética.jsx
   const navSolicitante = [
-    { id: 'dashboard',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, label: 'Dashboard' },
-    { id: 'meus-chamados',  icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>, label: 'Meus Chamados' },
-    { id: 'novo-chamado',   icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>, label: 'Abrir Chamado' },
+    { id: 'dashboard',      icon: <path d="M3 3h7v7H3zm11 0h7v7h-7zm0 11h7v7h-7zM3 14h7v7H3z"/>, label: 'Dashboard' },
+    { id: 'meus-chamados',  icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></>, label: 'Meus Chamados' },
+    { id: 'novo-chamado',   icon: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>, label: 'Abrir Chamado' },
   ];
 
   const navTecnico = [
-    { id: 'dashboard',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, label: 'Dashboard' },
-    { id: 'bandeja',        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>, label: 'Bandeja de Chamados' },
-    { id: 'meus-atend',     icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h8l-2 8 10-12h-8z"/></svg>, label: 'Meus Atendimentos' },
+    { id: 'dashboard',      icon: <path d="M3 3h7v7H3zm11 0h7v7h-7zm0 11h7v7h-7zM3 14h7v7H3z"/>, label: 'Dashboard' },
+    { id: 'bandeja',        icon: <><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></>, label: 'Bandeja' },
+    { id: 'meus-atend',     icon: <path d="M13 2L3 14h8l-2 8 10-12h-8z"/>, label: 'Meus Atendimentos' },
   ];
 
   const navAdmin = [
-    { id: 'dashboard',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, label: 'Dashboard' },
-    { id: 'todos-chamados', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>, label: 'Todos os Chamados' },
-    { id: 'meus-chamados',  icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>, label: 'Meus Chamados' },
-    { id: 'novo-chamado',   icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>, label: 'Abrir Chamado' },
-    { id: 'bandeja',        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>, label: 'Bandeja' },
-    { id: 'usuarios',       icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, label: 'Usuários' },
-    { id: 'logs-visualizacao', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>, label: 'Logs de Visualização' },
+    { id: 'dashboard',      icon: <path d="M3 3h7v7H3zm11 0h7v7h-7zm0 11h7v7h-7zM3 14h7v7H3z"/>, label: 'Dashboard' },
+    { id: 'todos-chamados', icon: <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>, label: 'Todos os Chamados' },
+    { id: 'meus-chamados',  icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></>, label: 'Meus Chamados' },
+    { id: 'novo-chamado',   icon: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>, label: 'Abrir Chamado' },
+    { id: 'bandeja',        icon: <><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></>, label: 'Bandeja' },
+    { id: 'usuarios',       icon: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>, label: 'Usuários' },
+    { id: 'logs-visualizacao', icon: <><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></>, label: 'Logs de Visualização' },
   ];
 
   const items = nivel === 'MASTER_ADMIN' ? navAdmin : nivel === 'TECNICO' ? navTecnico : navSolicitante;
@@ -418,46 +961,39 @@ function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
   return (
     <nav className="sidebar">
       <div className="sidebar-logo">
-        <h1>Central de Chamados</h1>
-        <p>SASSEPE</p>
+        <h1><span className="brand-pink">i</span><span className="brand-blue">Maida</span></h1>
       </div>
       <div className="nav-section">Menu</div>
       {items.map(item => (
         <button key={item.id} className={`nav-item${pagina === item.id ? ' active' : ''}`} onClick={() => setPagina(item.id)}>
-          <span>{item.icon}</span> {item.label}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {item.icon}
+          </svg>
+          {item.label}
         </button>
       ))}
       <div className="sidebar-footer">
         <div className="sidebar-user">
-          <div style={{ fontWeight: 600, color: '#fff', marginBottom: 2 }}>{user?.nome}</div>
-          <div>{user?.email}</div>
-          <span className="nivel-badge" style={{ background: meta.color + '30', color: meta.color }}>{meta.label}</span>
+          <div className="avatar">{user?.nome?.charAt(0).toUpperCase() || 'U'}</div>
+          <div className="user-info">
+            <div className="user-name">{user?.nome}</div>
+            <div className="user-email">{user?.email}</div>
+            <span className="nivel-badge" style={{ background: meta.color + '30', color: meta.color }}>{meta.label}</span>
+          </div>
         </div>
-        <button 
-            className="btn btn-ghost" 
-            style={{ 
-              width: '100%', 
-              justifyContent: 'center', 
-              color: 'rgba(255,255,255,.6)', 
-              borderColor: 'rgba(255,255,255,.15)', 
-              fontSize: '.8rem', 
-              padding: '8px', 
-              marginBottom: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }} 
-            onClick={onAbrirPerfil}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            Meu Perfil
-          </button>
-        <button 
-          className="btn btn-ghost" 
-          style={{ width: '100%', justifyContent: 'center', color: 'rgba(255,255,255,.6)', borderColor: 'rgba(255,255,255,.15)', fontSize: '.8rem', padding: '8px' }} 
-          onClick={onSair}>
+        <button className="btn-secondary" style={{ width: '100%', justifyContent: 'center', marginBottom: '8px' }} onClick={onAbrirPerfil}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Meu Perfil
+        </button>
+        <button className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }} onClick={onSair}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
           Sair
         </button>
       </div>
@@ -465,10 +1001,9 @@ function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
   );
 }
 
-// ── View: Novo Chamado (Funcionalidade App.jsx + Estética Estética.jsx) ───────
+// ── View: Novo Chamado (Estilo iMaida) ───────────────────────────────────────
 function NovoChamadoView({ user, api, onSucesso }) {
-  // Mantemos o estado padronizado e a lógica de envio do App.jsx original
-  const [form, setForm]     = useState({ descricao: '', criticidade: 'Média', complexidade: 'Média' });
+  const [form, setForm] = useState({ descricao: '', criticidade: 'Média', complexidade: 'Média' });
   const [salvando, setSalvando] = useState(false);
 
   const submit = async e => {
@@ -478,62 +1013,44 @@ function NovoChamadoView({ user, api, onSucesso }) {
     setSalvando(false);
   };
 
-  const LevelIcon = ({ color }) => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"></circle>
-      <line x1="12" y1="8" x2="12" y2="12"></line>
-      <line x1="12" y1="16" x2="12.01" y2="16"></line>
-    </svg>
-  );
-
   return (
     <div>
-      <h2 style={{ marginBottom: 6, fontSize: '1.25rem' }}>Abrir Novo Chamado</h2>
-      <p style={{ color: 'var(--muted)', fontSize: '.875rem', marginBottom: 28 }}>Preencha os dados abaixo para registrar um novo protocolo.</p>
+      <div className="top-bar">
+        <h1 className="page-title">Abrir Novo Chamado</h1>
+      </div>
+      <p style={{ color: 'var(--ink-soft)', marginBottom: 28 }}>Preencha os dados abaixo para registrar um novo protocolo.</p>
 
       <div className="card" style={{ maxWidth: 680 }}>
         <form onSubmit={submit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22, opacity: .6, pointerEvents: 'none' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22, opacity: .6 }}>
             <div>
-              <label className="label">Responsável pela Abertura</label>
+              <label className="label">Responsável</label>
               <input className="input-field" value={user?.nome || ''} readOnly />
             </div>
             <div>
-              <label className="label">Data / Hora da Abertura</label>
+              <label className="label">Data / Hora</label>
               <input className="input-field" value={new Date().toLocaleString('pt-BR')} readOnly />
             </div>
           </div>
 
           <div style={{ marginBottom: 22 }}>
             <label className="label">Descrição do Problema *</label>
-            <textarea className="input-field" rows={4} required
-              value={form.descricao} onChange={e => setForm({ ...form, descricao: e.target.value })}
-              placeholder="Descreva o problema com detalhes suficientes para diagnóstico…" style={{ resize: 'vertical' }} />
+            <textarea className="input-field" rows={4} required value={form.descricao} onChange={e => setForm({ ...form, descricao: e.target.value })} placeholder="Descreva o problema com detalhes suficientes para diagnóstico…" />
           </div>
 
           <div style={{ marginBottom: 22 }}>
-            <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-              </svg>
-              Grau de Criticidade *
-            </label>
+            <label className="label">Grau de Criticidade *</label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
               {['Alta', 'Média', 'Baixa'].map(c => {
                 const descMap = { Alta: 'Sistema fora do ar', Média: 'Falhas parciais', Baixa: 'Baixo impacto' };
                 const isSel = form.criticidade === c;
                 return (
-                  <div key={c} className={`crit-card${isSel ? ' selected' : ''}`}
-                    style={{ borderColor: isSel ? CRIT_COLOR[c] : 'transparent', background: isSel ? CRIT_COLOR[c] + '12' : 'var(--bg)', cursor: 'pointer' }}
-                    onClick={() => setForm({ ...form, criticidade: c })}>
+                  <div key={c} className="card" style={{ padding: 14, cursor: 'pointer', borderColor: isSel ? CRIT_COLOR[c] : 'var(--line)', background: isSel ? CRIT_COLOR[c] + '12' : 'var(--paper-pure)' }} onClick={() => setForm({ ...form, criticidade: c })}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                      <span style={{ width: 9, height: 9, borderRadius: '50%', background: CRIT_COLOR[c], display: 'inline-block', flexShrink: 0 }} />
-                      <strong style={{ fontFamily: 'Syne', fontSize: '.9rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <LevelIcon color={CRIT_COLOR[c]} />
-                        {c}
-                      </strong>
+                      <span style={{ width: 9, height: 9, borderRadius: '50%', background: CRIT_COLOR[c], display: 'inline-block' }} />
+                      <strong>{c}</strong>
                     </div>
-                    <div style={{ fontSize: '.7rem', color: 'var(--muted)', marginTop: 4 }}>{descMap[c]}</div>
+                    <div style={{ fontSize: '.7rem', color: 'var(--ink-soft)' }}>{descMap[c]}</div>
                   </div>
                 );
               })}
@@ -541,48 +1058,26 @@ function NovoChamadoView({ user, api, onSucesso }) {
             <CriticidadeBalloon crit={form.criticidade} />
           </div>
 
-          <div style={{ marginBottom: 22, animation: 'slideUp .2s ease' }}>
-            <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="9" y1="9" x2="15" y2="15"></line>
-                <line x1="15" y1="9" x2="9" y2="15"></line>
-              </svg>
-              Grau de Complexidade *
-            </label>
+          <div style={{ marginBottom: 22 }}>
+            <label className="label">Grau de Complexidade *</label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
               {['Alta', 'Média', 'Baixa'].map(cp => {
-                const descMap = { Alta: 'Solução complexa', Média: 'Solução moderada', Baixa: 'Solução simples' };
-                const cColorMap = { Alta: '#EF4444', Média: '#F59E0B', Baixa: '#10B981' };
                 const isSel = form.complexidade === cp;
                 return (
-                  <div key={cp} className={`crit-card${isSel ? ' selected' : ''}`}
-                    style={{ borderColor: isSel ? 'var(--accent2)' : 'transparent', textAlign: 'center', background: isSel ? 'var(--accent2)12' : 'var(--bg)', cursor: 'pointer' }}
-                    onClick={() => setForm({ ...form, complexidade: cp })}>
-                    <strong style={{ fontFamily: 'Syne', fontSize: '.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                      <LevelIcon color={cColorMap[cp]} />
-                      {cp}
-                    </strong>
-                    <div style={{ fontSize: '.7rem', color: 'var(--muted)', marginTop: 4 }}>{descMap[cp]}</div>
-                    <div style={{ fontSize: '.7rem', color: '#8B5CF6', marginTop: 4, fontWeight: 600 }}>
-                      {PRAZO_HORAS[form.criticidade][cp]}h de SLA
-                    </div>
+                  <div key={cp} className="card" style={{ padding: 14, cursor: 'pointer', textAlign: 'center', borderColor: isSel ? 'var(--maida-blue)' : 'var(--line)', background: isSel ? 'var(--maida-blue-soft)' : 'var(--paper-pure)' }} onClick={() => setForm({ ...form, complexidade: cp })}>
+                    <strong>{cp}</strong>
+                    <div style={{ fontSize: '.7rem', color: 'var(--ink-soft)', marginTop: 4 }}>{cp === 'Alta' ? 'Solução complexa' : cp === 'Média' ? 'Solução moderada' : 'Solução simples'}</div>
+                    <div style={{ fontSize: '.7rem', color: 'var(--maida-blue)', marginTop: 4, fontWeight: 600 }}>{PRAZO_HORAS[form.criticidade][cp]}h de SLA</div>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <div style={{ marginBottom: 24, animation: 'slideUp .2s ease' }}>
-            <SlaBox crit={form.criticidade} comp={form.complexidade} />
-          </div>
+          <SlaBox crit={form.criticidade} comp={form.complexidade} />
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-accent" type="submit" disabled={salvando || !form.descricao} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 2L11 13"></path>
-                <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
-              </svg>
+            <button className="btn btn-primary" type="submit" disabled={salvando || !form.descricao}>
               {salvando ? 'Abrindo...' : 'Abrir Chamado'}
             </button>
           </div>
@@ -594,20 +1089,13 @@ function NovoChamadoView({ user, api, onSucesso }) {
 
 // ── View: Lista de chamados genérica ─────────────────────────────────────────
 function ListaChamados({ titulo, chamados, userId, nivel, api, onRecarregar, registrarVisualizacao = false }) {
-  const [histModal,    setHistModal]    = useState(null);
-  const [resolModal,   setResolModal]   = useState(null);
+  const [histModal, setHistModal] = useState(null);
+  const [resolModal, setResolModal] = useState(null);
 
   useEffect(() => {
     if (registrarVisualizacao && chamados.length >= 0) {
       const registrar = async () => {
-        try {
-          await api('/logs/visualizacao-bandeja', {
-            method: 'POST',
-            body: JSON.stringify({ totalChamadosVisiveis: chamados.length })
-          });
-        } catch (err) {
-          console.debug('Erro ao registrar visualização:', err);
-        }
+        try { await api('/logs/visualizacao-bandeja', { method: 'POST', body: JSON.stringify({ totalChamadosVisiveis: chamados.length }) }); } catch (err) { console.debug(err); }
       };
       registrar();
     }
@@ -619,14 +1107,16 @@ function ListaChamados({ titulo, chamados, userId, nivel, api, onRecarregar, reg
 
   return (
     <div>
-      <h2 style={{ fontSize: '1.25rem', marginBottom: 20 }}>{titulo}</h2>
+      <div className="top-bar">
+        <h1 className="page-title">{titulo}</h1>
+      </div>
       {chamados.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
+        <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--ink-soft)' }}>
           <div style={{ fontSize: '2rem', marginBottom: 10 }}>📭</div>
           <p>Nenhum chamado encontrado.</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 16 }}>
+        <div className="tickets-grid">
           {chamados.map(c => (
             <ChamadoCard key={c.id} c={c} userId={userId} nivel={nivel}
               onAssumir={assumir} onFechar={ch => setResolModal(ch)} onValidar={validar} onHistorico={ch => setHistModal(ch)} />
@@ -669,249 +1159,162 @@ function UsuarioModal({ usuario, onClose, onSalvar }) {
 
   return (
     <Modal onClose={onClose}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <div className="label" style={{ marginBottom: 4 }}>{isEdicao ? 'Editar Usuário' : 'Novo Usuário'}</div>
-          <h2 style={{ fontSize: '1.25rem' }}>{isEdicao ? usuario.nome_completo : 'Cadastrar'}</h2>
-        </div>
-        <button className="btn btn-ghost" style={{ padding: '5px 12px' }} onClick={onClose}>✕</button>
+      <div className="modal-header">
+        <h2>{isEdicao ? 'Editar Usuário' : 'Novo Usuário'}</h2>
+        <button className="btn-icon" onClick={onClose}>✕</button>
       </div>
+      <div className="modal-body">
+        {erro && <div className="card" style={{ background: '#FEF2F2', color: '#EF4444', marginBottom: 16 }}>{erro}</div>}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
+          <div style={{ gridColumn: '1/-1' }}>
+            <label className="label">Nome Completo *</label>
+            <input className="input-field" value={form.nome_completo} onChange={e => setForm({ ...form, nome_completo: e.target.value })} placeholder="Nome completo do usuário" />
+          </div>
+          <div>
+            <label className="label">E-mail *</label>
+            <input className="input-field" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="usuario@email.com" />
+          </div>
+          <div>
+            <label className="label">{isEdicao ? 'Nova Senha' : 'Senha *'}</label>
+            <input className="input-field" type="password" value={form.senha} onChange={e => setForm({ ...form, senha: e.target.value })} placeholder="••••••••" />
+          </div>
+          <div>
+            <label className="label">Cargo / Função</label>
+            <input className="input-field" value={form.cargo_nome} onChange={e => setForm({ ...form, cargo_nome: e.target.value })} placeholder="Ex: Analista de TI" />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 22 }}>
+            <input type="checkbox" id="ativo-chk" checked={form.ativo} onChange={e => setForm({ ...form, ativo: e.target.checked })} style={{ width: 16, height: 16, accentColor: 'var(--maida-blue)' }} />
+            <label htmlFor="ativo-chk">Usuário ativo</label>
+          </div>
+        </div>
 
-      {erro && <div style={{ color: '#EF4444', fontSize: '.875rem', marginBottom: 16, padding: '10px 14px', background: '#FEF2F2', borderRadius: 8 }}>{erro}</div>}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
-        <div style={{ gridColumn: '1/-1' }}>
-          <label className="label">Nome Completo *</label>
-          <input className="input-field" value={form.nome_completo} onChange={e => setForm({ ...form, nome_completo: e.target.value })} placeholder="Nome completo do usuário" />
-        </div>
-        <div>
-          <label className="label">E-mail *</label>
-          <input className="input-field" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="usuario@email.com" />
-        </div>
-        <div>
-          <label className="label">{isEdicao ? 'Nova Senha (deixe em branco para manter)' : 'Senha *'}</label>
-          <input className="input-field" type="password" value={form.senha} onChange={e => setForm({ ...form, senha: e.target.value })} placeholder="••••••••" />
-        </div>
-        <div>
-          <label className="label">Cargo / Função</label>
-          <input className="input-field" value={form.cargo_nome} onChange={e => setForm({ ...form, cargo_nome: e.target.value })} placeholder="Ex: Analista de TI" />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 22 }}>
-          <input type="checkbox" id="ativo-chk" checked={form.ativo} onChange={e => setForm({ ...form, ativo: e.target.checked })}
-            style={{ width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer' }} />
-          <label htmlFor="ativo-chk" style={{ fontSize: '.875rem', cursor: 'pointer', userSelect: 'none' }}>Usuário ativo</label>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: 24 }}>
-        <label className="label" style={{ marginBottom: 10 }}>Nível de Acesso *</label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
-          {CARGOS.map(c => (
-            <div key={c.id}
-              onClick={() => setForm({ ...form, nivel_acesso: c.id })}
-              style={{
-                padding: '12px 14px', borderRadius: 'var(--radius)', cursor: 'pointer', transition: 'all .15s',
-                border: `2px solid ${form.nivel_acesso === c.id ? c.color : 'var(--border)'}`,
-                background: form.nivel_acesso === c.id ? c.color + '12' : 'var(--bg)',
-              }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: c.color, display: 'inline-block' }} />
-                <strong style={{ fontFamily: 'Syne', fontSize: '.875rem', color: form.nivel_acesso === c.id ? c.color : 'var(--text)' }}>{c.label}</strong>
+        <div style={{ marginBottom: 24 }}>
+          <label className="label">Nível de Acesso *</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+            {CARGOS.map(c => (
+              <div key={c.id} className="card" style={{ padding: 12, cursor: 'pointer', borderColor: form.nivel_acesso === c.id ? c.color : 'var(--line)', background: form.nivel_acesso === c.id ? c.color + '12' : 'var(--paper-pure)' }} onClick={() => setForm({ ...form, nivel_acesso: c.id })}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: c.color }} />
+                  <strong style={{ color: form.nivel_acesso === c.id ? c.color : 'var(--ink)' }}>{c.label}</strong>
+                </div>
+                <p style={{ fontSize: '.72rem', color: 'var(--ink-soft)' }}>{c.desc}</p>
               </div>
-              <p style={{ fontSize: '.72rem', color: 'var(--muted)', lineHeight: 1.4 }}>{c.desc}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-        <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-        <button className="btn btn-dark" disabled={salvando} onClick={submit}>
-          {salvando ? 'Salvando…' : isEdicao ? '💾 Salvar Alterações' : '➕ Cadastrar Usuário'}
-        </button>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" disabled={salvando} onClick={submit}>{salvando ? 'Salvando…' : isEdicao ? '💾 Salvar' : '➕ Cadastrar'}</button>
+        </div>
       </div>
     </Modal>
   );
 }
 
 function UsuariosView({ api }) {
-  const [usuarios, setUsuarios]     = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [modal, setModal]           = useState(null); 
-  const [busca, setBusca]           = useState('');
+  const [usuarios, setUsuarios] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(null);
+  const [busca, setBusca] = useState('');
   const [filtroNivel, setFiltroNivel] = useState('TODOS');
   const [confirmDel, setConfirmDel] = useState(null);
-  const [toast, setToast]           = useState(null);
+  const [toast, setToast] = useState(null);
 
-  const mostrarToast = (msg, tipo = 'ok') => {
-    setToast({ msg, tipo });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const carregar = async () => {
-    setLoading(true);
-    const d = await api('/usuarios');
-    if (d) setUsuarios(d);
-    setLoading(false);
-  };
-
+  const mostrarToast = (msg, tipo = 'ok') => { setToast({ msg, tipo }); setTimeout(() => setToast(null), 3000); };
+  const carregar = async () => { setLoading(true); const d = await api('/usuarios'); if (d) setUsuarios(d); setLoading(false); };
   useEffect(() => { carregar(); }, []);
 
   const salvar = async (form, id) => {
     const endpoint = id ? `/usuarios/${id}` : '/usuarios';
-    const method   = id ? 'PUT' : 'POST';
+    const method = id ? 'PUT' : 'POST';
     const res = await api(endpoint, { method, body: JSON.stringify(form) });
     if (!res || res.error) return false;
-    mostrarToast(id ? 'Usuário atualizado com sucesso.' : 'Usuário cadastrado com sucesso.');
-    setModal(null);
-    carregar();
-    return true;
+    mostrarToast(id ? 'Usuário atualizado.' : 'Usuário cadastrado.');
+    setModal(null); carregar(); return true;
   };
 
   const toggleAtivo = async (u) => {
-    const res = await api(`/usuarios/${u.id}`, { method: 'PUT', body: JSON.stringify({ ...u, ativo: !u.ativo }) });
-    if (res && !res.error) { mostrarToast(`Usuário ${!u.ativo ? 'ativado' : 'desativado'}.`); carregar(); }
+    await api(`/usuarios/${u.id}`, { method: 'PUT', body: JSON.stringify({ ...u, ativo: !u.ativo }) });
+    mostrarToast(`Usuário ${!u.ativo ? 'ativado' : 'desativado'}.`); carregar();
   };
-
-  const excluir = async (id) => {
-    const res = await api(`/usuarios/${id}`, { method: 'DELETE' });
-    if (res && !res.error) { mostrarToast('Usuário removido.', 'err'); carregar(); }
-    setConfirmDel(null);
-  };
+  const excluir = async (id) => { await api(`/usuarios/${id}`, { method: 'DELETE' }); mostrarToast('Usuário removido.', 'err'); carregar(); setConfirmDel(null); };
 
   const listagem = usuarios.filter(u => {
     const ok = filtroNivel === 'TODOS' || u.nivel_acesso === filtroNivel;
-    const q  = busca.toLowerCase();
+    const q = busca.toLowerCase();
     return ok && (!q || u.nome_completo.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
   });
 
-  const counts = {
-    total:      usuarios.length,
-    ativos:     usuarios.filter(u => u.ativo).length,
-    inativos:   usuarios.filter(u => !u.ativo).length,
-  };
-
   return (
     <div>
-      {toast && (
-        <div style={{
-          position: 'fixed', bottom: 28, right: 28, zIndex: 2000,
-          padding: '12px 20px', borderRadius: 12, fontWeight: 600, fontSize: '.875rem',
-          background: toast.tipo === 'err' ? '#FEF2F2' : '#F0FDF4',
-          color:      toast.tipo === 'err' ? '#991B1B'  : '#166534',
-          border:     `1px solid ${toast.tipo === 'err' ? '#FECACA' : '#BBF7D0'}`,
-          boxShadow: 'var(--shadow-lg)', animation: 'slideUp .2s ease',
-        }}>
-          {toast.tipo === 'err' ? '🗑' : '✅'} {toast.msg}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: 4 }}>Gerenciamento de Usuários</h2>
-          <p style={{ color: 'var(--muted)', fontSize: '.875rem' }}>Cadastre, edite e controle os acessos do sistema.</p>
-        </div>
-        <button className="btn btn-dark" onClick={() => setModal('novo')}>➕ Novo Usuário</button>
+      {toast && <div className="card" style={{ position: 'fixed', bottom: 28, right: 28, zIndex: 2000, background: toast.tipo === 'err' ? '#FEF2F2' : '#F0FDF4', color: toast.tipo === 'err' ? '#991B1B' : '#166534' }}>{toast.tipo === 'err' ? '🗑' : '✅'} {toast.msg}</div>}
+      <div className="top-bar">
+        <h1 className="page-title">Gerenciamento de Usuários</h1>
+        <button className="btn btn-primary" onClick={() => setModal('novo')}>➕ Novo Usuário</button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
-        {[
-          { num: counts.total,    lbl: 'Total',    color: 'var(--text)' },
-          { num: counts.ativos,   lbl: 'Ativos',   color: '#10B981' },
-          { num: counts.inativos, lbl: 'Inativos', color: '#EF4444' },
-        ].map((s, i) => (
+      <div className="stat-grid">
+        {[{ num: usuarios.length, lbl: 'Total', color: 'var(--ink)' }, { num: usuarios.filter(u => u.ativo).length, lbl: 'Ativos', color: '#10B981' }, { num: usuarios.filter(u => !u.ativo).length, lbl: 'Inativos', color: '#EF4444' }].map((s, i) => (
           <div key={i} className="stat-card">
-            <div className="stat-num" style={{ color: s.color, fontSize: '1.6rem' }}>{s.num}</div>
-            <div className="stat-lbl">{s.lbl}</div>
+            <div className="stat-number" style={{ color: s.color }}>{s.num}</div>
+            <div className="stat-label">{s.lbl}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input className="input-field" style={{ maxWidth: 280 }} placeholder="🔍  Buscar por nome ou e-mail…"
-          value={busca} onChange={e => setBusca(e.target.value)} />
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+        <input className="input-field" style={{ maxWidth: 280 }} placeholder="🔍 Buscar por nome ou e-mail…" value={busca} onChange={e => setBusca(e.target.value)} />
         <div style={{ display: 'flex', gap: 6 }}>
           {['TODOS', 'SOLICITANTE', 'TECNICO', 'MASTER_ADMIN'].map(n => {
-            const meta = n === 'TODOS' ? { label: 'Todos', color: 'var(--text)' } : NIVEL_META[n];
-            return (
-              <button key={n} className={`tab-btn${filtroNivel === n ? ' active' : ''}`}
-                onClick={() => setFiltroNivel(n)} style={{ fontSize: '.75rem', padding: '6px 14px' }}>
-                {meta.label}
-              </button>
-            );
+            const meta = n === 'TODOS' ? { label: 'Todos', color: 'var(--ink)' } : NIVEL_META[n];
+            return <button key={n} className={`btn-secondary${filtroNivel === n ? ' active' : ''}`} onClick={() => setFiltroNivel(n)} style={{ fontSize: '.75rem', padding: '6px 14px' }}>{meta.label}</button>;
           })}
         </div>
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>Carregando…</div>
-      ) : listagem.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
-          <div style={{ fontSize: '2rem', marginBottom: 10 }}>👤</div>
-          <p>Nenhum usuário encontrado.</p>
-        </div>
-      ) : (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1.2fr 1fr .8fr 1.1fr', gap: 12, padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
-            {['Nome', 'E-mail', 'Nível', 'Cargo', 'Status', 'Ações'].map((h, i) => (
-              <div key={i} style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', fontFamily: 'Syne' }}>{h}</div>
-            ))}
-          </div>
-          {listagem.map((u, i) => {
-            const nvMeta = NIVEL_META[u.nivel_acesso] || NIVEL_META.SOLICITANTE;
-            return (
-              <div key={u.id} style={{
-                display: 'grid', gridTemplateColumns: '2fr 2fr 1.2fr 1fr .8fr 1.1fr', gap: 12,
-                padding: '14px 20px', alignItems: 'center',
-                borderBottom: i < listagem.length - 1 ? '1px solid var(--border)' : 'none',
-                background: !u.ativo ? '#FAFAF8' : 'transparent',
-                opacity: u.ativo ? 1 : 0.6,
-              }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '.875rem' }}>{u.nome_completo}</div>
-                </div>
-                <div style={{ fontSize: '.8rem', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
-                <div>
-                  <span className="badge" style={{ background: nvMeta.color + '20', color: nvMeta.color }}>{nvMeta.label}</span>
-                </div>
-                <div style={{ fontSize: '.8rem', color: 'var(--muted)' }}>{u.cargo_nome || <em>—</em>}</div>
-                <div>
-                  <span className="badge" style={{ background: u.ativo ? '#D1FAE5' : '#FEE2E2', color: u.ativo ? '#065F46' : '#991B1B' }}>
-                    {u.ativo ? 'Ativo' : 'Inativo'}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: '.72rem' }} onClick={() => setModal(u)} title="Editar">✏️</button>
-                  <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: '.72rem', color: u.ativo ? '#EF4444' : '#10B981', borderColor: u.ativo ? '#FECACA' : '#BBF7D0' }}
-                    onClick={() => toggleAtivo(u)} title={u.ativo ? 'Desativar' : 'Ativar'}>
-                    {u.ativo ? '⛔' : '✅'}
-                  </button>
-                  <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: '.72rem', color: '#EF4444', borderColor: '#FECACA' }}
-                    onClick={() => setConfirmDel(u)} title="Excluir">🗑</button>
-                </div>
-              </div>
-            );
-          })}
+      {loading ? <div className="card" style={{ textAlign: 'center' }}>Carregando…</div> : listagem.length === 0 ? <div className="card" style={{ textAlign: 'center' }}>Nenhum usuário encontrado.</div> : (
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: 'var(--paper)', borderBottom: '1px solid var(--line)' }}>
+                {['Nome', 'E-mail', 'Nível', 'Cargo', 'Status', 'Ações'].map(h => <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '.68rem', fontWeight: 700 }}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {listagem.map(u => {
+                const nvMeta = NIVEL_META[u.nivel_acesso] || NIVEL_META.SOLICITANTE;
+                return (
+                  <tr key={u.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                    <td style={{ padding: '12px 16px', fontWeight: 600 }}>{u.nome_completo}</td>
+                    <td style={{ padding: '12px 16px', color: 'var(--ink-soft)' }}>{u.email}</td>
+                    <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: nvMeta.color + '20', color: nvMeta.color }}>{nvMeta.label}</span></td>
+                    <td style={{ padding: '12px 16px', color: 'var(--ink-soft)' }}>{u.cargo_nome || '—'}</td>
+                    <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: u.ativo ? '#D1FAE5' : '#FEE2E2', color: u.ativo ? '#065F46' : '#991B1B' }}>{u.ativo ? 'Ativo' : 'Inativo'}</span></td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="btn-icon" style={{ width: 32, height: 32 }} onClick={() => setModal(u)}>✏️</button>
+                        <button className="btn-icon" style={{ width: 32, height: 32, color: u.ativo ? '#EF4444' : '#10B981' }} onClick={() => toggleAtivo(u)}>{u.ativo ? '⛔' : '✅'}</button>
+                        <button className="btn-icon" style={{ width: 32, height: 32, color: '#EF4444' }} onClick={() => setConfirmDel(u)}>🗑</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
-
-      {modal && (
-        <UsuarioModal
-          usuario={modal === 'novo' ? null : modal}
-          onClose={() => setModal(null)}
-          onSalvar={salvar}
-        />
-      )}
-
+      {modal && <UsuarioModal usuario={modal === 'novo' ? null : modal} onClose={() => setModal(null)} onSalvar={salvar} />}
       {confirmDel && (
         <Modal onClose={() => setConfirmDel(null)}>
-          <h2 style={{ marginBottom: 8 }}>Excluir Usuário</h2>
-          <p style={{ color: 'var(--muted)', fontSize: '.875rem', marginBottom: 24 }}>
-            Tem certeza que deseja excluir <strong>{confirmDel.nome_completo}</strong>? Esta ação não pode ser desfeita.
-          </p>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button className="btn btn-ghost" onClick={() => setConfirmDel(null)}>Cancelar</button>
-            <button className="btn btn-red" onClick={() => excluir(confirmDel.id)}>🗑 Excluir</button>
+          <div className="modal-header"><h2>Excluir Usuário</h2><button className="btn-icon" onClick={() => setConfirmDel(null)}>✕</button></div>
+          <div className="modal-body">
+            <p>Tem certeza que deseja excluir <strong>{confirmDel.nome_completo}</strong>? Esta ação não pode ser desfeita.</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button className="btn-secondary" onClick={() => setConfirmDel(null)}>Cancelar</button>
+              <button className="btn-danger" onClick={() => excluir(confirmDel.id)}>🗑 Excluir</button>
+            </div>
           </div>
         </Modal>
       )}
@@ -933,321 +1336,102 @@ function LogsVisualizacaoView({ api }) {
   const [toast, setToast] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const mostrarToast = (msg, tipo = 'ok') => {
-    setToast({ msg, tipo });
-    setTimeout(() => setToast(null), 3000);
-  };
-
+  const mostrarToast = (msg, tipo = 'ok') => { setToast({ msg, tipo }); setTimeout(() => setToast(null), 3000); };
   const carregarLogs = async () => {
     setLoading(true);
     try {
-      const url = `/admin/logs-visualizacao?limit=${limit}&offset=${offset}`;
-      const data = await api(url);
-      if (data) {
-        setLogs(data.logs || []);
-        setTotal(data.total || 0);
-      }
-    } catch (err) {
-      mostrarToast('Erro ao carregar logs', 'err');
-    } finally {
-      setLoading(false);
-    }
+      const data = await api(`/admin/logs-visualizacao?limit=${limit}&offset=${offset}`);
+      if (data) { setLogs(data.logs || []); setTotal(data.total || 0); }
+    } catch (err) { mostrarToast('Erro ao carregar logs', 'err'); } finally { setLoading(false); }
   };
-
-  useEffect(() => {
-    carregarLogs();
-  }, [limit, offset]);
+  useEffect(() => { carregarLogs(); }, [limit, offset]);
 
   const totalPages = Math.ceil(total / limit);
   const currentPage = Math.floor(offset / limit) + 1;
 
-  const exportarCSV = async () => {
-    try {
-      let url = '/admin/logs-visualizacao/export';
-      if (dataInicio && dataFim) {
-        url += `?startDate=${dataInicio}&endDate=${dataFim}`;
-      }
-      const data = await api(url);
-      if (data && data.logs) {
-        const csvData = data.logs.map(log => ({
-          ID: log.id,
-          Usuário: log.nome_completo,
-          Email: log.email,
-          'Nível Acesso': log.nivel_acesso || 'N/A',
-          'Data Visualização': new Date(log.data_visualizacao).toLocaleString('pt-BR'),
-          'Total Chamados': log.total_chamados_visiveis
-        }));
-        
-        const headers = Object.keys(csvData[0] || {});
-        const csvRows = [
-          headers.join(','),
-          ...csvData.map(row => headers.map(h => `"${(row[h] || '').toString().replace(/"/g, '""')}"`).join(','))
-        ];
-        
-        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const urlBlob = URL.createObjectURL(blob);
-        link.href = urlBlob;
-        link.setAttribute('download', `logs_visualizacao_${new Date().toISOString().slice(0,19)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(urlBlob);
-        
-        mostrarToast('CSV exportado com sucesso!');
-      }
-    } catch (err) {
-      mostrarToast('Erro ao exportar CSV', 'err');
-    }
-  };
+  const excluirLog = async (id) => { await api(`/admin/logs-visualizacao/${id}`, { method: 'DELETE' }); mostrarToast('Log excluído!'); carregarLogs(); setConfirmDelete(null); };
+  const excluirTodosLogs = async () => { await api('/admin/logs-visualizacao?all=true', { method: 'DELETE' }); mostrarToast('Todos os logs foram excluídos!'); carregarLogs(); setConfirmDelete(null); };
+  const excluirLogsPorUsuario = async (usuarioId) => { await api(`/admin/logs-visualizacao?usuarioId=${usuarioId}`, { method: 'DELETE' }); mostrarToast('Logs do usuário excluídos!'); carregarLogs(); setConfirmDelete(null); };
 
-  const excluirLog = async (id) => {
-    try {
-      await api(`/admin/logs-visualizacao/${id}`, { method: 'DELETE' });
-      mostrarToast('Log excluído com sucesso!');
-      carregarLogs();
-    } catch (err) {
-      mostrarToast('Erro ao excluir log', 'err');
-    }
-    setConfirmDelete(null);
-  };
-
-  const excluirTodosLogs = async () => {
-    try {
-      await api('/admin/logs-visualizacao?all=true', { method: 'DELETE' });
-      mostrarToast('Todos os logs foram excluídos!');
-      carregarLogs();
-    } catch (err) {
-      mostrarToast('Erro ao excluir logs', 'err');
-    }
-    setConfirmDelete(null);
-  };
-
-  const excluirLogsPorUsuario = async (usuarioId) => {
-    try {
-      await api(`/admin/logs-visualizacao?usuarioId=${usuarioId}`, { method: 'DELETE' });
-      mostrarToast('Logs do usuário excluídos com sucesso!');
-      carregarLogs();
-    } catch (err) {
-      mostrarToast('Erro ao excluir logs', 'err');
-    }
-    setConfirmDelete(null);
-  };
-
-  const logsFiltrados = logs.filter(log => {
-    if (!filtroUsuario) return true;
-    return log.nome_completo.toLowerCase().includes(filtroUsuario.toLowerCase()) ||
-           log.email.toLowerCase().includes(filtroUsuario.toLowerCase());
-  });
+  const logsFiltrados = logs.filter(log => !filtroUsuario || log.nome_completo.toLowerCase().includes(filtroUsuario.toLowerCase()) || log.email.toLowerCase().includes(filtroUsuario.toLowerCase()));
 
   return (
     <div>
-      {toast && (
-        <div style={{
-          position: 'fixed', bottom: 28, right: 28, zIndex: 2000,
-          padding: '12px 20px', borderRadius: 12, fontWeight: 600, fontSize: '.875rem',
-          background: toast.tipo === 'err' ? '#FEF2F2' : '#F0FDF4',
-          color: toast.tipo === 'err' ? '#991B1B' : '#166534',
-          border: `1px solid ${toast.tipo === 'err' ? '#FECACA' : '#BBF7D0'}`,
-          boxShadow: 'var(--shadow-lg)'
-        }}>
-          {toast.tipo === 'err' ? '❌' : '✅'} {toast.msg}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: 4 }}>Logs de Visualização da Bandeja</h2>
-          <p style={{ color: 'var(--muted)', fontSize: '.875rem' }}>
-            Registros de quando os usuários visualizaram a bandeja de chamados
-          </p>
-        </div>
+      {toast && <div className="card" style={{ position: 'fixed', bottom: 28, right: 28, zIndex: 2000, background: toast.tipo === 'err' ? '#FEF2F2' : '#F0FDF4', color: toast.tipo === 'err' ? '#991B1B' : '#166534' }}>{toast.tipo === 'err' ? '❌' : '✅'} {toast.msg}</div>}
+      <div className="top-bar">
+        <h1 className="page-title">Logs de Visualização</h1>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn btn-blue" onClick={() => setShowFilters(!showFilters)}>
-            🔍 {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
-          </button>
-          <button className="btn btn-green" onClick={exportarCSV}>
-            📊 Exportar CSV
-          </button>
-          <button className="btn btn-red" onClick={() => setConfirmDelete({ type: 'all' })}>
-            🗑 Limpar Todos
-          </button>
+          <button className="btn-secondary" onClick={() => setShowFilters(!showFilters)}>🔍 {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}</button>
+          <button className="btn-danger" onClick={() => setConfirmDelete({ type: 'all' })}>🗑 Limpar Todos</button>
         </div>
       </div>
 
       {showFilters && (
-        <div className="card" style={{ marginBottom: 24, padding: 20 }}>
+        <div className="card" style={{ marginBottom: 24 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-            <div>
-              <label className="label">Filtrar por Usuário</label>
-              <input
-                className="input-field"
-                placeholder="Nome ou e-mail..."
-                value={filtroUsuario}
-                onChange={e => setFiltroUsuario(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="label">Data Início</label>
-              <input
-                className="input-field"
-                type="date"
-                value={dataInicio}
-                onChange={e => setDataInicio(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="label">Data Fim</label>
-              <input
-                className="input-field"
-                type="date"
-                value={dataFim}
-                onChange={e => setDataFim(e.target.value)}
-              />
-            </div>
+            <div><label className="label">Filtrar por Usuário</label><input className="input-field" placeholder="Nome ou e-mail..." value={filtroUsuario} onChange={e => setFiltroUsuario(e.target.value)} /></div>
+            <div><label className="label">Data Início</label><input className="input-field" type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)} /></div>
+            <div><label className="label">Data Fim</label><input className="input-field" type="date" value={dataFim} onChange={e => setDataFim(e.target.value)} /></div>
           </div>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
-        {[
-          { num: total, lbl: 'Total de Visualizações', color: 'var(--text)' },
-          { num: logsFiltrados.length, lbl: 'Registros Exibidos', color: '#3B82F6' },
-          { num: new Set(logs.map(l => l.id_usuario)).size, lbl: 'Usuários Únicos', color: '#10B981' }
-        ].map((s, i) => (
-          <div key={i} className="stat-card">
-            <div className="stat-num" style={{ color: s.color, fontSize: '1.8rem' }}>{s.num}</div>
-            <div className="stat-lbl">{s.lbl}</div>
-          </div>
+      <div className="stat-grid">
+        {[{ num: total, lbl: 'Total de Visualizações', color: 'var(--ink)' }, { num: logsFiltrados.length, lbl: 'Registros Exibidos', color: '#3B82F6' }, { num: new Set(logs.map(l => l.id_usuario)).size, lbl: 'Usuários Únicos', color: '#10B981' }].map((s, i) => (
+          <div key={i} className="stat-card"><div className="stat-number" style={{ color: s.color }}>{s.num}</div><div className="stat-label">{s.lbl}</div></div>
         ))}
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
-          Carregando logs...
-        </div>
-      ) : logsFiltrados.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
-          <div style={{ fontSize: '2rem', marginBottom: 10 }}>📭</div>
-          <p>Nenhum log de visualização encontrado.</p>
-        </div>
-      ) : (
+      {loading ? <div className="card" style={{ textAlign: 'center' }}>Carregando logs...</div> : logsFiltrados.length === 0 ? <div className="card" style={{ textAlign: 'center' }}>Nenhum log encontrado.</div> : (
         <>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'auto 1.5fr 1.5fr 1fr 1fr 1fr 1.5fr auto',
-              gap: 12,
-              padding: '12px 20px',
-              borderBottom: '1px solid var(--border)',
-              background: 'var(--bg)'
-            }}>
-              {['ID', 'Usuário', 'E-mail', 'Nível', 'Data', 'Chamados', 'Ações'].map((h, i) => (
-                <div key={i} style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', fontFamily: 'Syne' }}>
-                  {h}
-                </div>
-              ))}
-            </div>
-            {logsFiltrados.map((log, i) => {
-              const nivelColor = log.nivel_acesso === 'MASTER_ADMIN' ? '#8B5CF6' : log.nivel_acesso === 'TECNICO' ? '#3B82F6' : '#F59E0B';
-              return (
-                <div key={log.id} style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'auto 1.5fr 1.5fr 1fr 1fr 1fr 1.5fr auto',
-                  gap: 12,
-                  padding: '14px 20px',
-                  alignItems: 'center',
-                  borderBottom: i < logsFiltrados.length - 1 ? '1px solid var(--border)' : 'none',
-                  background: i % 2 === 0 ? 'transparent' : 'var(--bg)'
-                }}>
-                  <div style={{ fontSize: '.8rem', fontFamily: 'monospace', color: 'var(--muted)' }}>#{log.id}</div>
-                  <div style={{ fontWeight: 600, fontSize: '.875rem' }}>{log.nome_completo}</div>
-                  <div style={{ fontSize: '.75rem', color: 'var(--muted)' }}>{log.email}</div>
-                  <div>
-                    <span className="badge" style={{ background: nivelColor + '20', color: nivelColor, fontSize: '.65rem' }}>
-                      {log.nivel_acesso || 'SOLICITANTE'}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '.8rem' }}>{new Date(log.data_visualizacao).toLocaleString('pt-BR')}</div>
-                  <div style={{ fontSize: '.8rem', textAlign: 'center' }}>
-                    <span className="badge" style={{ background: '#3B82F620', color: '#3B82F6' }}>
-                      {log.total_chamados_visiveis} chamados
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '.8rem', color: 'var(--muted)' }}>
-                    {Math.ceil((new Date() - new Date(log.data_visualizacao)) / (1000 * 60 * 60))}h atrás
-                  </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button
-                      className="btn btn-ghost"
-                      style={{ padding: '4px 10px', fontSize: '.72rem', color: '#EF4444', borderColor: '#FECACA' }}
-                      onClick={() => setConfirmDelete({ type: 'single', id: log.id })}
-                      title="Excluir log"
-                    >
-                      🗑
-                    </button>
-                    <button
-                      className="btn btn-ghost"
-                      style={{ padding: '4px 10px', fontSize: '.72rem', color: '#F59E0B', borderColor: '#FEF3C7' }}
-                      onClick={() => setConfirmDelete({ type: 'user', usuarioId: log.id_usuario, nome: log.nome_completo })}
-                      title="Excluir todos os logs deste usuário"
-                    >
-                      👤
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: 'var(--paper)', borderBottom: '1px solid var(--line)' }}>
+                  {['ID', 'Usuário', 'E-mail', 'Nível', 'Data', 'Chamados', 'Ações'].map(h => <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '.68rem', fontWeight: 700 }}>{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {logsFiltrados.map((log, i) => {
+                  const nivelColor = log.nivel_acesso === 'MASTER_ADMIN' ? '#8B5CF6' : log.nivel_acesso === 'TECNICO' ? '#3B82F6' : '#F59E0B';
+                  return (
+                    <tr key={log.id} style={{ borderBottom: i < logsFiltrados.length - 1 ? '1px solid var(--line)' : 'none' }}>
+                      <td style={{ padding: '12px 16px', fontFamily: 'monospace' }}>#{log.id}</td>
+                      <td style={{ padding: '12px 16px', fontWeight: 600 }}>{log.nome_completo}</td>
+                      <td style={{ padding: '12px 16px', color: 'var(--ink-soft)' }}>{log.email}</td>
+                      <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: nivelColor + '20', color: nivelColor }}>{log.nivel_acesso || 'SOLICITANTE'}</span></td>
+                      <td style={{ padding: '12px 16px' }}>{new Date(log.data_visualizacao).toLocaleString('pt-BR')}</td>
+                      <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: '#3B82F620', color: '#3B82F6' }}>{log.total_chamados_visiveis} chamados</span></td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button className="btn-icon" style={{ width: 32, height: 32, color: '#EF4444' }} onClick={() => setConfirmDelete({ type: 'single', id: log.id })}>🗑</button>
+                          <button className="btn-icon" style={{ width: 32, height: 32, color: '#F59E0B' }} onClick={() => setConfirmDelete({ type: 'user', usuarioId: log.id_usuario, nome: log.nome_completo })}>👤</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-
           {totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 24 }}>
-              <button
-                className="btn btn-ghost"
-                disabled={offset === 0}
-                onClick={() => setOffset(Math.max(0, offset - limit))}
-              >
-                ← Anterior
-              </button>
-              <span style={{ padding: '8px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8 }}>
-                Página {currentPage} de {totalPages}
-              </span>
-              <button
-                className="btn btn-ghost"
-                disabled={offset + limit >= total}
-                onClick={() => setOffset(offset + limit)}
-              >
-                Próxima →
-              </button>
+              <button className="btn-secondary" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - limit))}>← Anterior</button>
+              <span style={{ padding: '8px 16px', background: 'var(--paper-pure)', border: '1px solid var(--line)', borderRadius: 8 }}>Página {currentPage} de {totalPages}</span>
+              <button className="btn-secondary" disabled={offset + limit >= total} onClick={() => setOffset(offset + limit)}>Próxima →</button>
             </div>
           )}
         </>
       )}
-
       {confirmDelete && (
         <Modal onClose={() => setConfirmDelete(null)}>
-          <h2 style={{ marginBottom: 8 }}>
-            {confirmDelete.type === 'all' ? 'Limpar Todos os Logs' :
-             confirmDelete.type === 'user' ? `Excluir Logs de ${confirmDelete.nome}` :
-             'Excluir Log'}
-          </h2>
-          <p style={{ color: 'var(--muted)', fontSize: '.875rem', marginBottom: 24 }}>
-            {confirmDelete.type === 'all' && 'Tem certeza que deseja excluir TODOS os logs de visualização? Esta ação não pode ser desfeita.'}
-            {confirmDelete.type === 'user' && `Tem certeza que deseja excluir todos os logs de visualização do usuário "${confirmDelete.nome}"?`}
-            {confirmDelete.type === 'single' && 'Tem certeza que deseja excluir este log?'}
-          </p>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>Cancelar</button>
-            <button
-              className="btn btn-red"
-              onClick={() => {
-                if (confirmDelete.type === 'all') excluirTodosLogs();
-                else if (confirmDelete.type === 'user') excluirLogsPorUsuario(confirmDelete.usuarioId);
-                else excluirLog(confirmDelete.id);
-              }}
-            >
-              {confirmDelete.type === 'all' ? '🗑 Limpar Todos' : '🗑 Excluir'}
-            </button>
+          <div className="modal-header"><h2>{confirmDelete.type === 'all' ? 'Limpar Todos os Logs' : confirmDelete.type === 'user' ? `Excluir Logs de ${confirmDelete.nome}` : 'Excluir Log'}</h2><button className="btn-icon" onClick={() => setConfirmDelete(null)}>✕</button></div>
+          <div className="modal-body">
+            <p>{confirmDelete.type === 'all' && 'Tem certeza que deseja excluir TODOS os logs?'}{confirmDelete.type === 'user' && `Tem certeza que deseja excluir todos os logs do usuário "${confirmDelete.nome}"?`}{confirmDelete.type === 'single' && 'Tem certeza que deseja excluir este log?'}</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button className="btn-secondary" onClick={() => setConfirmDelete(null)}>Cancelar</button>
+              <button className="btn-danger" onClick={() => { if (confirmDelete.type === 'all') excluirTodosLogs(); else if (confirmDelete.type === 'user') excluirLogsPorUsuario(confirmDelete.usuarioId); else excluirLog(confirmDelete.id); }}>🗑 Excluir</button>
+            </div>
           </div>
         </Modal>
       )}
@@ -1255,21 +1439,9 @@ function LogsVisualizacaoView({ api }) {
   );
 }
 
-// ── View: Dashboard (Funcionalidade App.jsx intacta) ─────────────────────────
-const MESES = [
-  'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
-  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'
-];
-
-function gerarCompetencias() {
-  const now = new Date();
-  const lista = [];
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    lista.push({ mes: d.getMonth() + 1, ano: d.getFullYear(), label: `${MESES[d.getMonth()]}/${d.getFullYear()}` });
-  }
-  return lista.reverse();
-}
+// ── View: Dashboard (Estilo iMaida) ─────────────────────────────────────────
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function gerarCompetencias() { const now = new Date(); const lista = []; for (let i = 11; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); lista.push({ mes: d.getMonth() + 1, ano: d.getFullYear(), label: `${MESES[d.getMonth()]}/${d.getFullYear()}` }); } return lista.reverse(); }
 
 function DashboardView({ api, user }) {
   const now = new Date();
@@ -1279,266 +1451,85 @@ function DashboardView({ api, user }) {
   const [loading, setLoading] = useState(true);
   const [showPicker, setShowPicker] = useState(false);
 
-  const carregar = useCallback(async () => {
-    setLoading(true);
-    const data = await api(`/chamados/dashboard?mes=${competencia.mes}&ano=${competencia.ano}`);
-    if (data) setChamados(data);
-    setLoading(false);
-  }, [api, competencia.mes, competencia.ano]);
-
+  const carregar = useCallback(async () => { setLoading(true); const data = await api(`/chamados/dashboard?mes=${competencia.mes}&ano=${competencia.ano}`); if (data) setChamados(data); setLoading(false); }, [api, competencia.mes, competencia.ano]);
   useEffect(() => { carregar(); }, [carregar]);
 
-  const counts = {
-    total:     chamados.length,
-    abertos:   chamados.filter(c => c.status === 'ABERTO').length,
-    analise:   chamados.filter(c => c.status === 'EM ANALISE').length,
-    validacao: chamados.filter(c => c.status === 'AGUARDANDO VALIDACAO').length,
-    concluido: chamados.filter(c => c.status === 'CONCLUIDO').length,
-    vencidos:  chamados.filter(c => c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO').length,
-    alta:      chamados.filter(c => c.criticidade === 'Alta').length,
-    media:     chamados.filter(c => c.criticidade === 'Média').length,
-    baixa:     chamados.filter(c => c.criticidade === 'Baixa').length,
-  };
-
+  const counts = { total: chamados.length, abertos: chamados.filter(c => c.status === 'ABERTO').length, analise: chamados.filter(c => c.status === 'EM ANALISE').length, validacao: chamados.filter(c => c.status === 'AGUARDANDO VALIDACAO').length, concluido: chamados.filter(c => c.status === 'CONCLUIDO').length, vencidos: chamados.filter(c => c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO').length, alta: chamados.filter(c => c.criticidade === 'Alta').length, media: chamados.filter(c => c.criticidade === 'Média').length, baixa: chamados.filter(c => c.criticidade === 'Baixa').length };
   const taxaConclusao = counts.total > 0 ? Math.round((counts.concluido / counts.total) * 100) : 0;
-
-  const concluidos = chamados.filter(c => c.status === 'CONCLUIDO' && c.data_abertura && c.data_fechamento);
-  const slaMediaHoras = concluidos.length > 0
-    ? Math.round(concluidos.reduce((acc, c) => acc + (new Date(c.data_fechamento) - new Date(c.data_abertura)) / 3_600_000, 0) / concluidos.length)
-    : null;
-
-  const exportarCSV = () => {
-    if (!chamados.length) return;
-    const cabecalho = [
-      'Número do Chamado',
-      'Descrição',
-      'Status',
-      'Criticidade',
-      'Complexidade',
-      'Solicitante',
-      'Responsável',
-      'Data de Abertura',
-      'Prazo SLA',
-      'Data de Fechamento',
-      'SLA Vencido'
-    ];
-    const linhas = chamados.map(c => [
-      c.numero_chamado || '',
-      `"${(c.descricao || '').replace(/"/g, '""')}"`,
-      STATUS_LABEL[c.status] || c.status || '',
-      c.criticidade || '',
-      c.complexidade || '',
-      c.solicitante_nome || '',
-      c.responsavel_nome || '',
-      c.data_abertura ? new Date(c.data_abertura).toLocaleString('pt-BR') : '',
-      c.prazo_limite   ? new Date(c.prazo_limite).toLocaleString('pt-BR')  : '',
-      c.data_fechamento ? new Date(c.data_fechamento).toLocaleString('pt-BR') : '',
-      (c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO') ? 'Sim' : 'Não'
-    ]);
-    const csv = [cabecalho.join(';'), ...linhas.map(l => l.join(';'))].join('\n');
-    const bom = '\uFEFF'; 
-    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `chamados_${MESES[competencia.mes - 1]}_${competencia.ano}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+  const slaMediaHoras = chamados.filter(c => c.status === 'CONCLUIDO' && c.data_abertura && c.data_fechamento).length > 0 ? Math.round(chamados.filter(c => c.status === 'CONCLUIDO' && c.data_abertura && c.data_fechamento).reduce((acc, c) => acc + (new Date(c.data_fechamento) - new Date(c.data_abertura)) / 3_600_000, 0) / chamados.filter(c => c.status === 'CONCLUIDO' && c.data_abertura && c.data_fechamento).length) : null;
 
   const labelCompetencia = `${MESES[competencia.mes - 1]}/${competencia.ano}`;
 
-  const stats = [
-    { num: counts.total,     lbl: 'Total de Chamados',     color: 'var(--text)' },
-    { num: counts.abertos,   lbl: 'Em Aberto',             color: '#F59E0B' },
-    { num: counts.analise,   lbl: 'Em Análise',            color: '#3B82F6' },
-    { num: counts.validacao, lbl: 'Aguard. Validação',     color: '#8B5CF6' },
-    { num: counts.concluido, lbl: 'Concluídos',            color: '#10B981' },
-    { num: counts.vencidos,  lbl: 'SLA Vencido',           color: '#EF4444' },
-  ];
-
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: 4 }}>Dashboard</h2>
-          <p style={{ color: 'var(--muted)', fontSize: '.875rem' }}>Visão geral dos chamados por competência</p>
-        </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative' }}>
-            <button
-              className="btn btn-ghost"
-              style={{ fontFamily: 'Syne', fontWeight: 600, fontSize: '.875rem', gap: 8 }}
-              onClick={() => setShowPicker(v => !v)}
-            >
-              📅 {labelCompetencia} ▾
-            </button>
-            {showPicker && (
-              <div style={{
-                position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200,
-                background: 'var(--surface)', border: '1px solid var(--border)',
-                borderRadius: 14, boxShadow: 'var(--shadow-lg)', padding: '8px 0',
-                minWidth: 200, maxHeight: 260, overflowY: 'auto'
-              }}>
-                {competencias.map((c, i) => {
-                  const ativo = c.mes === competencia.mes && c.ano === competencia.ano;
-                  return (
-                    <button key={i} onClick={() => { setCompetencia({ mes: c.mes, ano: c.ano }); setShowPicker(false); }} style={{
-                      display: 'block', width: '100%', textAlign: 'left', padding: '9px 18px',
-                      background: ativo ? 'var(--accent)' : 'transparent',
-                      color: ativo ? '#fff' : 'var(--text)', border: 'none', cursor: 'pointer',
-                      fontSize: '.875rem', fontFamily: 'DM Sans', fontWeight: ativo ? 600 : 400,
-                      transition: 'background .1s'
-                    }}
-                      onMouseEnter={e => { if (!ativo) e.currentTarget.style.background = 'var(--bg)'; }}
-                      onMouseLeave={e => { if (!ativo) e.currentTarget.style.background = 'transparent'; }}
-                    >
-                      {c.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          <button
-            className="btn btn-green"
-            style={{ fontSize: '.875rem' }}
-            disabled={!chamados.length}
-            onClick={exportarCSV}
-            title={chamados.length ? `Baixar ${chamados.length} chamados em CSV` : 'Sem dados para exportar'}
-          >
-            ⬇ Baixar CSV
-          </button>
+      <div className="top-bar">
+        <h1 className="page-title">Dashboard</h1>
+        <div style={{ position: 'relative' }}>
+          <button className="btn-secondary" onClick={() => setShowPicker(v => !v)}>📅 {labelCompetencia} ▾</button>
+          {showPicker && (
+            <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200, background: 'var(--paper-pure)', border: '1px solid var(--line)', borderRadius: 14, boxShadow: 'var(--shadow-lg)', padding: '8px 0', minWidth: 200, maxHeight: 260, overflowY: 'auto' }}>
+              {competencias.map((c, i) => {
+                const ativo = c.mes === competencia.mes && c.ano === competencia.ano;
+                return (
+                  <button key={i} onClick={() => { setCompetencia({ mes: c.mes, ano: c.ano }); setShowPicker(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 18px', background: ativo ? 'var(--maida-blue)' : 'transparent', color: ativo ? '#fff' : 'var(--ink)', border: 'none', cursor: 'pointer', fontSize: '.875rem', fontWeight: ativo ? 600 : 400 }}>
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>Carregando…</div>
-      ) : (
+      {loading ? <div className="card" style={{ textAlign: 'center' }}>Carregando…</div> : (
         <>
-          {counts.vencidos > 0 && (
-            <div style={{ padding: '14px 18px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 'var(--radius)', marginBottom: 20, fontSize: '.875rem', color: '#991B1B' }}>
-              ⚠️ <strong>{counts.vencidos} chamado(s)</strong> com SLA vencido requerem atenção imediata.
-            </div>
-          )}
-          {counts.total === 0 && (
-            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
-              <div style={{ fontSize: '2rem', marginBottom: 10 }}>📭</div>
-              <p>Nenhum chamado encontrado em <strong>{labelCompetencia}</strong>.</p>
-            </div>
-          )}
-
-          {counts.total > 0 && (
+          {counts.vencidos > 0 && <div className="card" style={{ background: '#FEF2F2', borderColor: '#FECACA', color: '#991B1B', marginBottom: 20 }}>⚠️ <strong>{counts.vencidos} chamado(s)</strong> com SLA vencido.</div>}
+          {counts.total === 0 ? <div className="card" style={{ textAlign: 'center' }}>Nenhum chamado encontrado em {labelCompetencia}.</div> : (
             <>
-              <div className="stat-grid" style={{ marginBottom: 20 }}>
-                {stats.map((s, i) => (
-                  <div key={i} className="stat-card">
-                    <div className="stat-num" style={{ color: s.color }}>{s.num}</div>
-                    <div className="stat-lbl">{s.lbl}</div>
-                  </div>
+              <div className="stat-grid">
+                {[{ num: counts.total, lbl: 'Total', color: 'var(--ink)' }, { num: counts.abertos, lbl: 'Abertos', color: '#F59E0B' }, { num: counts.analise, lbl: 'Em Análise', color: '#3B82F6' }, { num: counts.validacao, lbl: 'Aguard. Validação', color: '#8B5CF6' }, { num: counts.concluido, lbl: 'Concluídos', color: '#10B981' }, { num: counts.vencidos, lbl: 'SLA Vencido', color: '#EF4444' }].map((s, i) => (
+                  <div key={i} className="stat-card"><div className="stat-number" style={{ color: s.color }}>{s.num}</div><div className="stat-label">{s.lbl}</div></div>
                 ))}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16, marginBottom: 28 }}>
-                <div className="stat-card">
-                  <div className="stat-num" style={{ color: '#10B981', fontSize: '1.8rem' }}>{taxaConclusao}%</div>
-                  <div className="stat-lbl">Taxa de Conclusão</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-num" style={{ color: '#EF4444', fontSize: '1.8rem' }}>{counts.alta}</div>
-                  <div className="stat-lbl">Criticidade Alta</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-num" style={{ color: '#F59E0B', fontSize: '1.8rem' }}>{counts.media}</div>
-                  <div className="stat-lbl">Criticidade Média</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-num" style={{ color: '#10B981', fontSize: '1.8rem' }}>{counts.baixa}</div>
-                  <div className="stat-lbl">Criticidade Baixa</div>
-                </div>
-                {slaMediaHoras !== null && (
-                  <div className="stat-card">
-                    <div className="stat-num" style={{ color: 'var(--accent2)', fontSize: '1.8rem' }}>{slaMediaHoras}h</div>
-                    <div className="stat-lbl">Tempo Médio de Resolução</div>
-                  </div>
-                )}
+              <div className="stat-grid">
+                <div className="stat-card"><div className="stat-number" style={{ color: '#10B981' }}>{taxaConclusao}%</div><div className="stat-label">Taxa de Conclusão</div></div>
+                <div className="stat-card"><div className="stat-number" style={{ color: '#EF4444' }}>{counts.alta}</div><div className="stat-label">Criticidade Alta</div></div>
+                <div className="stat-card"><div className="stat-number" style={{ color: '#F59E0B' }}>{counts.media}</div><div className="stat-label">Criticidade Média</div></div>
+                <div className="stat-card"><div className="stat-number" style={{ color: '#10B981' }}>{counts.baixa}</div><div className="stat-label">Criticidade Baixa</div></div>
+                {slaMediaHoras !== null && <div className="stat-card"><div className="stat-number" style={{ color: 'var(--maida-blue)' }}>{slaMediaHoras}h</div><div className="stat-label">Tempo Médio de Resolução</div></div>}
               </div>
 
-              <div className="card" style={{ marginBottom: 24 }}>
-                <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: '.875rem', marginBottom: 16 }}>Distribuição por Status</div>
+              <div className="card">
+                <h3 style={{ marginBottom: 16 }}>Distribuição por Status</h3>
                 <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', height: 28, gap: 2 }}>
-                  {[
-                    { val: counts.abertos,   color: '#F59E0B', lbl: 'Aberto' },
-                    { val: counts.analise,   color: '#3B82F6', lbl: 'Em Análise' },
-                    { val: counts.validacao, color: '#8B5CF6', lbl: 'Aguard. Validação' },
-                    { val: counts.concluido, color: '#10B981', lbl: 'Concluído' },
-                  ].filter(s => s.val > 0).map((s, i) => (
-                    <div key={i} title={`${s.lbl}: ${s.val}`} style={{
-                      flex: s.val, background: s.color, borderRadius: 4, minWidth: 4,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#fff', fontSize: '.7rem', fontWeight: 700, overflow: 'hidden', whiteSpace: 'nowrap'
-                    }}>
-                      {s.val > 2 ? `${s.val}` : ''}
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
-                  {[
-                    { val: counts.abertos,   color: '#F59E0B', lbl: 'Aberto' },
-                    { val: counts.analise,   color: '#3B82F6', lbl: 'Em Análise' },
-                    { val: counts.validacao, color: '#8B5CF6', lbl: 'Aguard. Validação' },
-                    { val: counts.concluido, color: '#10B981', lbl: 'Concluído' },
-                  ].map((s, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.8rem' }}>
-                      <span style={{ width: 10, height: 10, borderRadius: 3, background: s.color, flexShrink: 0, display: 'inline-block' }} />
-                      {s.lbl}: <strong>{s.val}</strong>
-                    </div>
+                  {[{ val: counts.abertos, color: '#F59E0B', lbl: 'Aberto' }, { val: counts.analise, color: '#3B82F6', lbl: 'Em Análise' }, { val: counts.validacao, color: '#8B5CF6', lbl: 'Aguard. Validação' }, { val: counts.concluido, color: '#10B981', lbl: 'Concluído' }].filter(s => s.val > 0).map((s, i) => (
+                    <div key={i} title={`${s.lbl}: ${s.val}`} style={{ flex: s.val, background: s.color, borderRadius: 4, minWidth: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '.7rem', fontWeight: 700 }}>{s.val > 2 ? `${s.val}` : ''}</div>
                   ))}
                 </div>
               </div>
 
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: '.875rem' }}>
-                    Chamados — {labelCompetencia}
-                    <span style={{ marginLeft: 8, fontWeight: 400, color: 'var(--muted)', fontSize: '.8rem' }}>({chamados.length} registros)</span>
-                  </div>
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)' }}>
+                  <strong>Chamados — {labelCompetencia}</strong> <span style={{ color: 'var(--ink-soft)' }}>({chamados.length} registros)</span>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.82rem' }}>
-                    <thead>
-                      <tr style={{ background: 'var(--bg)' }}>
-                        {['Número','Status','Criticidade','Complexidade','Solicitante','Responsável','Abertura','Prazo SLA','SLA'].map((h, i) => (
-                          <th key={i} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--muted)', fontFamily: 'Syne', whiteSpace: 'nowrap', borderBottom: '1px solid var(--border)' }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
+                    <thead><tr style={{ background: 'var(--paper)' }}>{['Número','Status','Criticidade','Complexidade','Solicitante','Responsável','Abertura','Prazo SLA','SLA'].map(h => <th key={h} style={{ padding: '10px 14px', textAlign: 'left' }}>{h}</th>)}</tr></thead>
                     <tbody>
                       {chamados.map((c, i) => {
                         const vencido = c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO';
                         return (
-                          <tr key={c.id} style={{ borderBottom: i < chamados.length - 1 ? '1px solid var(--border)' : 'none', background: i % 2 === 1 ? 'var(--bg)' : 'transparent' }}>
-                            <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: 'var(--accent2)', fontWeight: 600, whiteSpace: 'nowrap' }}>{c.numero_chamado}</td>
-                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                              <span className="badge" style={{ background: (STATUS_COLOR[c.status] || '#888') + '20', color: STATUS_COLOR[c.status] || '#888' }}>
-                                {STATUS_LABEL[c.status] || c.status}
-                              </span>
-                            </td>
-                            <td style={{ padding: '10px 14px' }}>
-                              <span className="badge" style={{ background: (CRIT_COLOR[c.criticidade] || '#888') + '20', color: CRIT_COLOR[c.criticidade] || '#888' }}>{c.criticidade}</span>
-                            </td>
-                            <td style={{ padding: '10px 14px', color: 'var(--muted)' }}>{c.complexidade}</td>
-                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>{c.solicitante_nome || '—'}</td>
-                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{c.responsavel_nome || <em>Não assumido</em>}</td>
-                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{fmt(c.data_abertura)}</td>
-                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', color: vencido ? '#EF4444' : 'var(--muted)', fontWeight: vencido ? 700 : 400 }}>{fmt(c.prazo_limite)}</td>
-                            <td style={{ padding: '10px 14px' }}>
-                              {vencido
-                                ? <span className="badge" style={{ background: '#FEE2E2', color: '#DC2626' }}>⚠ Vencido</span>
-                                : <span className="badge" style={{ background: '#D1FAE5', color: '#065F46' }}>✓ OK</span>}
-                            </td>
+                          <tr key={c.id} style={{ borderBottom: i < chamados.length - 1 ? '1px solid var(--line)' : 'none' }}>
+                            <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 600 }}>{c.numero_chamado}</td>
+                            <td style={{ padding: '10px 14px' }}><span className="badge" style={{ background: (STATUS_COLOR[c.status] || '#888') + '20', color: STATUS_COLOR[c.status] || '#888' }}>{STATUS_LABEL[c.status] || c.status}</span></td>
+                            <td style={{ padding: '10px 14px' }}><span className="badge" style={{ background: (CRIT_COLOR[c.criticidade] || '#888') + '20', color: CRIT_COLOR[c.criticidade] || '#888' }}>{c.criticidade}</span></td>
+                            <td style={{ padding: '10px 14px', color: 'var(--ink-soft)' }}>{c.complexidade}</td>
+                            <td style={{ padding: '10px 14px' }}>{c.solicitante_nome || '—'}</td>
+                            <td style={{ padding: '10px 14px', color: 'var(--ink-soft)' }}>{c.responsavel_nome || '—'}</td>
+                            <td style={{ padding: '10px 14px', color: 'var(--ink-soft)' }}>{fmt(c.data_abertura)}</td>
+                            <td style={{ padding: '10px 14px', color: vencido ? '#EF4444' : 'var(--ink-soft)', fontWeight: vencido ? 700 : 400 }}>{fmt(c.prazo_limite)}</td>
+                            <td style={{ padding: '10px 14px' }}>{vencido ? <span className="badge" style={{ background: '#FEE2E2', color: '#DC2626' }}>⚠ Vencido</span> : <span className="badge" style={{ background: '#D1FAE5', color: '#065F46' }}>✓ OK</span>}</td>
                           </tr>
                         );
                       })}
@@ -1556,252 +1547,72 @@ function DashboardView({ api, user }) {
 
 // ── Modal de Edição de Perfil ─────────────────────────────────────────────────
 function PerfilModal({ user, onClose, onPerfilAtualizado }) {
-  const [originalForm, setOriginalForm] = useState({
-    nome_completo: user?.nome || '',
-    email: user?.email || '',
-  });
-  
-  const [form, setForm] = useState({
-    nome_completo: user?.nome || '',
-    email: user?.email || '',
-    senha_atual: '',
-    nova_senha: '',
-    confirmar_nova_senha: ''
-  });
-  
+  const [form, setForm] = useState({ nome_completo: user?.nome || '', email: user?.email || '', senha_atual: '', nova_senha: '', confirmar_nova_senha: '' });
+  const [alterandoSenha, setAlterandoSenha] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
-  const [sucesso, setSucesso] = useState('');
-  const [alterandoSenha, setAlterandoSenha] = useState(false);
-
-  const hasChanges = () => {
-    if (form.nome_completo !== originalForm.nome_completo) return true;
-    if (form.email !== originalForm.email) return true;
-    if (alterandoSenha && (form.nova_senha || form.confirmar_nova_senha)) return true;
-    return false;
-  };
-
-  const isSubmitDisabled = () => {
-    if (salvando) return true;
-    if (!hasChanges()) return true;
-    if (alterandoSenha) {
-      if (!form.senha_atual) return true;
-      if (!form.nova_senha) return true;
-      if (form.nova_senha !== form.confirmar_nova_senha) return true;
-      if (form.nova_senha.length < 6) return true;
-    }
-    return false;
-  };
 
   const submit = async () => {
     setErro('');
-    setSucesso('');
-    
     if (!form.nome_completo.trim()) { setErro('Nome é obrigatório.'); return; }
-    if (!form.email.trim()) { setErro('E-mail é obrigatório.'); return; }
-    
     if (alterandoSenha && form.nova_senha) {
       if (form.nova_senha !== form.confirmar_nova_senha) { setErro('As senhas não coincidem.'); return; }
       if (form.nova_senha.length < 6) { setErro('A nova senha deve ter no mínimo 6 caracteres.'); return; }
-      if (!form.senha_atual) { setErro('Senha atual é necessária para alterar a senha.'); return; }
     }
-    
     setSalvando(true);
-    
     try {
       const payload = { nome_completo: form.nome_completo, email: form.email };
-      if (alterandoSenha && form.nova_senha) {
-        payload.senha_atual = form.senha_atual;
-        payload.nova_senha = form.nova_senha;
-      }
-      
+      if (alterandoSenha && form.nova_senha) { payload.senha_atual = form.senha_atual; payload.nova_senha = form.nova_senha; }
       const token = localStorage.getItem('token');
-      const r = await fetch('/api/usuarios/perfil', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      
+      const r = await fetch('/api/usuarios/perfil', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
       const res = await r.json();
-      
       if (r.ok) {
         localStorage.setItem('token', res.token);
-        setOriginalForm({ nome_completo: form.nome_completo, email: form.email });
-        setSucesso('Perfil atualizado com sucesso!');
-        setAlterandoSenha(false);
-        setForm({ ...form, senha_atual: '', nova_senha: '', confirmar_nova_senha: '' });
         if (onPerfilAtualizado) onPerfilAtualizado(res.user);
-        setTimeout(() => onClose(), 1500);
-      } else {
-        setErro(res.error || 'Erro ao atualizar perfil.');
-      }
-    } catch (err) {
-      setErro('Erro de conexão. Tente novamente.');
-    } finally {
-      setSalvando(false);
-    }
+        onClose();
+      } else { setErro(res.error || 'Erro ao atualizar perfil.'); }
+    } catch (err) { setErro('Erro de conexão.'); } finally { setSalvando(false); }
   };
 
   return (
     <Modal onClose={onClose}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <div className="label" style={{ marginBottom: 4 }}>Editar Perfil</div>
-          <h2 style={{ fontSize: '1.25rem' }}>{user?.nome}</h2>
+      <div className="modal-header"><h2>Editar Perfil</h2><button className="btn-icon" onClick={onClose}>✕</button></div>
+      <div className="modal-body">
+        {erro && <div className="card" style={{ background: '#FEF2F2', color: '#EF4444', marginBottom: 16 }}>{erro}</div>}
+        <div style={{ marginBottom: 18 }}><label className="label">Nome Completo *</label><input className="input-field" value={form.nome_completo} onChange={e => setForm({ ...form, nome_completo: e.target.value })} /></div>
+        <div style={{ marginBottom: 22 }}><label className="label">E-mail *</label><input className="input-field" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+        <div style={{ marginBottom: 16 }}><label><input type="checkbox" checked={alterandoSenha} onChange={e => { setAlterandoSenha(e.target.checked); if (!e.target.checked) setForm({ ...form, senha_atual: '', nova_senha: '', confirmar_nova_senha: '' }); }} /> Alterar senha</label></div>
+        {alterandoSenha && (
+          <>
+            <div style={{ marginBottom: 14 }}><label className="label">Senha Atual</label><input className="input-field" type="password" value={form.senha_atual} onChange={e => setForm({ ...form, senha_atual: e.target.value })} /></div>
+            <div style={{ marginBottom: 14 }}><label className="label">Nova Senha</label><input className="input-field" type="password" value={form.nova_senha} onChange={e => setForm({ ...form, nova_senha: e.target.value })} /></div>
+            <div style={{ marginBottom: 14 }}><label className="label">Confirmar Nova Senha</label><input className="input-field" type="password" value={form.confirmar_nova_senha} onChange={e => setForm({ ...form, confirmar_nova_senha: e.target.value })} /></div>
+          </>
+        )}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" disabled={salvando} onClick={submit}>{salvando ? 'Salvando…' : '💾 Salvar'}</button>
         </div>
-        <button className="btn btn-ghost" style={{ padding: '5px 12px' }} onClick={onClose}>✕</button>
-      </div>
-
-      {erro && (
-        <div style={{ color: '#EF4444', fontSize: '.875rem', marginBottom: 16, padding: '10px 14px', background: '#FEF2F2', borderRadius: 8 }}>
-          {erro}
-        </div>
-      )}
-      
-      {sucesso && (
-        <div style={{ color: '#10B981', fontSize: '.875rem', marginBottom: 16, padding: '10px 14px', background: '#F0FDF4', borderRadius: 8 }}>
-          {sucesso}
-        </div>
-      )}
-
-      <div style={{ marginBottom: 18 }}>
-        <label className="label">Nome Completo *</label>
-        <input 
-          className="input-field" 
-          value={form.nome_completo} 
-          onChange={e => setForm({ ...form, nome_completo: e.target.value })}
-          placeholder="Seu nome completo"
-        />
-      </div>
-
-      <div style={{ marginBottom: 22 }}>
-        <label className="label">E-mail *</label>
-        <input 
-          className="input-field" 
-          type="email"
-          value={form.email} 
-          onChange={e => setForm({ ...form, email: e.target.value })}
-          placeholder="seu@email.com"
-        />
-      </div>
-
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-          <input 
-            type="checkbox"
-            checked={alterandoSenha}
-            onChange={(e) => {
-              setAlterandoSenha(e.target.checked);
-              if (!e.target.checked) setForm({ ...form, senha_atual: '', nova_senha: '', confirmar_nova_senha: '' });
-            }}
-            style={{ width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer' }}
-          />
-          <span style={{ fontSize: '.875rem', fontWeight: 500 }}>Alterar senha</span>
-        </label>
-      </div>
-
-      {alterandoSenha && (
-        <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0 16px', paddingTop: 16 }}>
-          <div style={{ marginBottom: 14 }}>
-            <label className="label">Senha Atual *</label>
-            <input 
-              className="input-field" 
-              type="password"
-              value={form.senha_atual} 
-              onChange={e => setForm({ ...form, senha_atual: e.target.value })}
-              placeholder="Digite sua senha atual"
-              autoComplete="current-password"
-            />
-          </div>
-
-          <div style={{ marginBottom: 14 }}>
-            <label className="label">Nova Senha *</label>
-            <input 
-              className="input-field" 
-              type="password"
-              value={form.nova_senha} 
-              onChange={e => setForm({ ...form, nova_senha: e.target.value })}
-              placeholder="Mínimo 6 caracteres"
-              autoComplete="new-password"
-            />
-          </div>
-
-          <div style={{ marginBottom: 14 }}>
-            <label className="label">Confirmar Nova Senha *</label>
-            <input 
-              className="input-field" 
-              type="password"
-              value={form.confirmar_nova_senha} 
-              onChange={e => setForm({ ...form, confirmar_nova_senha: e.target.value })}
-              placeholder="Confirme a nova senha"
-              autoComplete="new-password"
-            />
-          </div>
-
-          {form.nova_senha && form.confirmar_nova_senha && form.nova_senha !== form.confirmar_nova_senha && (
-            <div style={{ color: '#EF4444', fontSize: '.75rem', marginTop: -8, marginBottom: 8 }}>
-              ⚠️ As senhas não coincidem
-            </div>
-          )}
-          {form.nova_senha && form.nova_senha.length < 6 && (
-            <div style={{ color: '#EF4444', fontSize: '.75rem', marginTop: -8, marginBottom: 8 }}>
-              ⚠️ A senha deve ter no mínimo 6 caracteres
-            </div>
-          )}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
-        <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-        <button 
-          className="btn btn-dark" 
-          disabled={isSubmitDisabled()} 
-          onClick={submit}
-          style={{ opacity: isSubmitDisabled() ? 0.5 : 1, cursor: isSubmitDisabled() ? 'not-allowed' : 'pointer' }}
-        >
-          {salvando ? 'Salvando…' : '💾 Salvar Alterações'}
-        </button>
       </div>
     </Modal>
   );
 }
 
-// ── App Principal (Funcionalidade e Roteamento App.jsx mantidos) ──────────────
-const decodeJwt = (tk) => {
-  try {
-    const payload = JSON.parse(atob(tk.split('.')[1]));
-    if (payload.exp && payload.exp * 1000 < Date.now()) return null; 
-    return { id: payload.id, nome: payload.nome, email: payload.email || '', nivel_acesso: payload.nivel_acesso };
-  } catch { return null; }
-};
-
+// ── App Principal ────────────────────────────────────────────────────────────
+const decodeJwt = (tk) => { try { const payload = JSON.parse(atob(tk.split('.')[1])); if (payload.exp && payload.exp * 1000 < Date.now()) return null; return { id: payload.id, nome: payload.nome, email: payload.email || '', nivel_acesso: payload.nivel_acesso }; } catch { return null; } };
 const PAGE_DEFAULTS = { SOLICITANTE: 'dashboard', TECNICO: 'dashboard', MASTER_ADMIN: 'dashboard' };
 
 export default function App() {
-  const [token,        setToken]        = useState(() => localStorage.getItem('token'));
-  const [user,         setUser]         = useState(() => {
-    const tk = localStorage.getItem('token');
-    return tk ? decodeJwt(tk) : null;
-  });
-  const [pagina,       setPagina]       = useState(() => {
-    const tk = localStorage.getItem('token');
-    if (!tk) return null;
-    const u = decodeJwt(tk);
-    return u ? (PAGE_DEFAULTS[u.nivel_acesso] || 'meus-chamados') : null;
-  });
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [user, setUser] = useState(() => { const tk = localStorage.getItem('token'); return tk ? decodeJwt(tk) : null; });
+  const [pagina, setPagina] = useState(() => { const tk = localStorage.getItem('token'); if (!tk) return null; const u = decodeJwt(tk); return u ? (PAGE_DEFAULTS[u.nivel_acesso] || 'meus-chamados') : null; });
   const [meusChamados, setMeusChamados] = useState([]);
-  const [disponiveis,  setDisponiveis]  = useState([]);
-  const [todos,        setTodos]        = useState([]);
+  const [disponiveis, setDisponiveis] = useState([]);
+  const [todos, setTodos] = useState([]);
   const [showPerfilModal, setShowPerfilModal] = useState(false);
 
   const api = useCallback(async (endpoint, opts = {}) => {
-    const r = await fetch(`/api${endpoint}`, {
-      ...opts,
-      headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }), ...opts.headers }
-    });
+    const r = await fetch(`/api${endpoint}`, { ...opts, headers: { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }), ...opts.headers } });
     if (r.status === 401) { localStorage.removeItem('token'); setToken(null); return null; }
     return r.json();
   }, [token]);
@@ -1810,71 +1621,30 @@ export default function App() {
     const [m, d] = await Promise.all([api('/chamados/meus'), api('/chamados/disponiveis')]);
     if (m) setMeusChamados(m);
     if (d) setDisponiveis(d);
-    if (user?.nivel_acesso === 'MASTER_ADMIN') {
-      const t = await api('/chamados/todos');
-      if (t) setTodos(t);
-    }
+    if (user?.nivel_acesso === 'MASTER_ADMIN') { const t = await api('/chamados/todos'); if (t) setTodos(t); }
   }, [api, user?.nivel_acesso]);
 
   useEffect(() => { if (token && user) carregar(); }, [token, user, carregar]);
 
-  const handleLogin = (tk, u) => {
-    setToken(tk); setUser(u);
-    setPagina(PAGE_DEFAULTS[u.nivel_acesso] || 'meus-chamados');
-  };
-
+  const handleLogin = (tk, u) => { setToken(tk); setUser(u); setPagina(PAGE_DEFAULTS[u.nivel_acesso] || 'meus-chamados'); };
   const sair = () => { localStorage.removeItem('token'); setToken(null); setUser(null); setPagina(null); };
 
-  if (!token || !user) return (
-    <>
-      <style>{G}</style>
-      <LoginScreen onLogin={handleLogin} />
-    </>
-  );
+  if (!token || !user) return <><style>{G}</style><LoginScreen onLogin={handleLogin} /></>;
 
   const nivel = user.nivel_acesso;
-
-  const handlePerfilAtualizado = (novoUsuario) => {
-    setUser(novoUsuario);
-    carregar();
-  };
+  const handlePerfilAtualizado = (novoUsuario) => { setUser(novoUsuario); carregar(); };
 
   const renderPagina = () => {
     switch (pagina) {
-      case 'novo-chamado':
-        return <NovoChamadoView user={user} api={api} onSucesso={() => { carregar(); setPagina(nivel === 'TECNICO' ? 'bandeja' : 'meus-chamados'); }} />;
-
-      case 'meus-chamados':
-        return <ListaChamados titulo="Meus Chamados" chamados={meusChamados} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} />;
-
-      case 'bandeja':
-        return <ListaChamados 
-          titulo="Bandeja de Chamados" 
-          chamados={disponiveis.filter(c => !c.id_responsavel)} 
-          userId={user.id} 
-          nivel={nivel} 
-          api={api} 
-          onRecarregar={carregar}
-          registrarVisualizacao={true}
-        />;
-
-      case 'meus-atend':
-        return <ListaChamados titulo="Meus Atendimentos" chamados={disponiveis.filter(c => `${c.id_responsavel}` === `${user.id}`)} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} />;
-
-      case 'todos-chamados':
-        return <ListaChamados titulo="Todos os Chamados" chamados={todos} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} />;
-
-      case 'logs-visualizacao':
-        return nivel === 'MASTER_ADMIN' ? <LogsVisualizacaoView api={api} /> : null;
-
-      case 'dashboard':
-        return <DashboardView api={api} user={user} todos={todos} />;
-
-      case 'usuarios':
-        return nivel === 'MASTER_ADMIN' ? <UsuariosView api={api} /> : null;
-
-      default:
-        return null;
+      case 'novo-chamado': return <NovoChamadoView user={user} api={api} onSucesso={() => { carregar(); setPagina(nivel === 'TECNICO' ? 'bandeja' : 'meus-chamados'); }} />;
+      case 'meus-chamados': return <ListaChamados titulo="Meus Chamados" chamados={meusChamados} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} />;
+      case 'bandeja': return <ListaChamados titulo="Bandeja de Chamados" chamados={disponiveis.filter(c => !c.id_responsavel)} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} registrarVisualizacao={true} />;
+      case 'meus-atend': return <ListaChamados titulo="Meus Atendimentos" chamados={disponiveis.filter(c => `${c.id_responsavel}` === `${user.id}`)} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} />;
+      case 'todos-chamados': return <ListaChamados titulo="Todos os Chamados" chamados={todos} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} />;
+      case 'logs-visualizacao': return nivel === 'MASTER_ADMIN' ? <LogsVisualizacaoView api={api} /> : null;
+      case 'dashboard': return <DashboardView api={api} user={user} />;
+      case 'usuarios': return nivel === 'MASTER_ADMIN' ? <UsuariosView api={api} /> : null;
+      default: return null;
     }
   };
 
@@ -1882,25 +1652,10 @@ export default function App() {
     <>
       <style>{G}</style>
       <div className="app-layout">
-        <Sidebar 
-          user={user} 
-          pagina={pagina} 
-          setPagina={setPagina} 
-          onSair={sair}
-          onAbrirPerfil={() => setShowPerfilModal(true)} 
-        />
-        <main className="main-content">
-          {renderPagina()}
-        </main>
+        <Sidebar user={user} pagina={pagina} setPagina={setPagina} onSair={sair} onAbrirPerfil={() => setShowPerfilModal(true)} />
+        <main className="main-content">{renderPagina()}</main>
       </div>
-      
-      {showPerfilModal && (
-        <PerfilModal 
-          user={user}
-          onClose={() => setShowPerfilModal(false)}
-          onPerfilAtualizado={handlePerfilAtualizado}
-        />
-      )}
+      {showPerfilModal && <PerfilModal user={user} onClose={() => setShowPerfilModal(false)} onPerfilAtualizado={handlePerfilAtualizado} />}
     </>
   );
 }
