@@ -95,6 +95,41 @@ app.get('/api/chamados/todos', auth, async (req, res) => {
   res.json(rows);
 });
 
+// Dashboard acessível a todos os usuários autenticados
+app.get('/api/chamados/dashboard', auth, async (req, res) => {
+  try {
+    const { mes, ano } = req.query;
+    let query;
+    let params = [];
+
+    if (mes && ano) {
+      query = `
+        SELECT c.*,
+               u1.nome_completo AS solicitante_nome,
+               u2.nome_completo AS responsavel_nome
+         FROM chamado_sassepe_chamados c
+         LEFT JOIN chamado_sassepe_usuarios u1 ON c.id_solicitante = u1.id
+         LEFT JOIN chamado_sassepe_usuarios u2 ON c.id_responsavel = u2.id
+         WHERE EXTRACT(MONTH FROM c.data_abertura) = $1
+           AND EXTRACT(YEAR  FROM c.data_abertura) = $2
+         ORDER BY c.data_abertura DESC`;
+      params = [parseInt(mes), parseInt(ano)];
+    } else {
+      query = `
+        SELECT c.*,
+               u1.nome_completo AS solicitante_nome,
+               u2.nome_completo AS responsavel_nome
+         FROM chamado_sassepe_chamados c
+         LEFT JOIN chamado_sassepe_usuarios u1 ON c.id_solicitante = u1.id
+         LEFT JOIN chamado_sassepe_usuarios u2 ON c.id_responsavel = u2.id
+         ORDER BY c.data_abertura DESC`;
+    }
+
+    const { rows } = await db.query(query, params);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.put('/api/chamados/:id/assumir', auth, async (req, res) => {
   try {
     const { rows } = await db.assignResponsavel(req.params.id, req.userId);
@@ -330,6 +365,7 @@ app.get('/api/admin/logs-visualizacao/export', auth, adminOnly, async (req, res)
     res.status(500).json({ error: e.message });
   }
 });
+
 // ── Iniciar ───────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`✅ Servidor rodando na porta ${PORT}`));

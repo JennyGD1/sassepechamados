@@ -362,10 +362,12 @@ function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
   const meta  = NIVEL_META[nivel] || NIVEL_META.SOLICITANTE;
 
   const navSolicitante = [
+    { id: 'dashboard',      icon: '📊', label: 'Dashboard' },
     { id: 'meus-chamados',  icon: '📋', label: 'Meus Chamados' },
     { id: 'novo-chamado',   icon: '➕', label: 'Abrir Chamado' },
   ];
   const navTecnico = [
+    { id: 'dashboard',      icon: '📊', label: 'Dashboard' },
     { id: 'bandeja',        icon: '📥', label: 'Bandeja de Chamados' },
     { id: 'meus-atend',     icon: '⚡', label: 'Meus Atendimentos' },
   ];
@@ -1181,16 +1183,102 @@ function LogsVisualizacaoView({ api }) {
   );
 }
 
-// ── View: Dashboard (MASTER_ADMIN) ───────────────────────────────────────────
-function DashboardView({ todos }) {
+// ── View: Dashboard (todos os usuários) ─────────────────────────────────────
+const MESES = [
+  'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'
+];
+
+function gerarCompetencias() {
+  const now = new Date();
+  const lista = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    lista.push({ mes: d.getMonth() + 1, ano: d.getFullYear(), label: `${MESES[d.getMonth()]}/${d.getFullYear()}` });
+  }
+  return lista.reverse();
+}
+
+function DashboardView({ api, user }) {
+  const now = new Date();
+  const competencias = gerarCompetencias();
+  const [competencia, setCompetencia] = useState({ mes: now.getMonth() + 1, ano: now.getFullYear() });
+  const [chamados, setChamados] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showPicker, setShowPicker] = useState(false);
+
+  const carregar = useCallback(async () => {
+    setLoading(true);
+    const data = await api(`/chamados/dashboard?mes=${competencia.mes}&ano=${competencia.ano}`);
+    if (data) setChamados(data);
+    setLoading(false);
+  }, [api, competencia.mes, competencia.ano]);
+
+  useEffect(() => { carregar(); }, [carregar]);
+
   const counts = {
-    total:     todos.length,
-    abertos:   todos.filter(c => c.status === 'ABERTO').length,
-    analise:   todos.filter(c => c.status === 'EM ANALISE').length,
-    validacao: todos.filter(c => c.status === 'AGUARDANDO VALIDACAO').length,
-    concluido: todos.filter(c => c.status === 'CONCLUIDO').length,
-    vencidos:  todos.filter(c => c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO').length,
+    total:     chamados.length,
+    abertos:   chamados.filter(c => c.status === 'ABERTO').length,
+    analise:   chamados.filter(c => c.status === 'EM ANALISE').length,
+    validacao: chamados.filter(c => c.status === 'AGUARDANDO VALIDACAO').length,
+    concluido: chamados.filter(c => c.status === 'CONCLUIDO').length,
+    vencidos:  chamados.filter(c => c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO').length,
+    alta:      chamados.filter(c => c.criticidade === 'Alta').length,
+    media:     chamados.filter(c => c.criticidade === 'Média').length,
+    baixa:     chamados.filter(c => c.criticidade === 'Baixa').length,
   };
+
+  // Taxa de conclusão
+  const taxaConclusao = counts.total > 0 ? Math.round((counts.concluido / counts.total) * 100) : 0;
+
+  // SLA médio em horas (só concluídos)
+  const concluidos = chamados.filter(c => c.status === 'CONCLUIDO' && c.data_abertura && c.data_fechamento);
+  const slaMediaHoras = concluidos.length > 0
+    ? Math.round(concluidos.reduce((acc, c) => acc + (new Date(c.data_fechamento) - new Date(c.data_abertura)) / 3_600_000, 0) / concluidos.length)
+    : null;
+
+  const exportarCSV = () => {
+    if (!chamados.length) return;
+    const cabecalho = [
+      'Número do Chamado',
+      'Descrição',
+      'Status',
+      'Criticidade',
+      'Complexidade',
+      'Solicitante',
+      'Responsável',
+      'Data de Abertura',
+      'Prazo SLA',
+      'Data de Fechamento',
+      'SLA Vencido'
+    ];
+    const linhas = chamados.map(c => [
+      c.numero_chamado || '',
+      `"${(c.descricao || '').replace(/"/g, '""')}"`,
+      STATUS_LABEL[c.status] || c.status || '',
+      c.criticidade || '',
+      c.complexidade || '',
+      c.solicitante_nome || '',
+      c.responsavel_nome || '',
+      c.data_abertura ? new Date(c.data_abertura).toLocaleString('pt-BR') : '',
+      c.prazo_limite   ? new Date(c.prazo_limite).toLocaleString('pt-BR')  : '',
+      c.data_fechamento ? new Date(c.data_fechamento).toLocaleString('pt-BR') : '',
+      (c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO') ? 'Sim' : 'Não'
+    ]);
+    const csv = [cabecalho.join(';'), ...linhas.map(l => l.join(';'))].join('\n');
+    const bom = '\uFEFF'; // BOM para UTF-8 no Excel
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chamados_${MESES[competencia.mes - 1]}_${competencia.ano}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const labelCompetencia = `${MESES[competencia.mes - 1]}/${competencia.ano}`;
 
   const stats = [
     { num: counts.total,     lbl: 'Total de Chamados',     color: 'var(--text)' },
@@ -1203,20 +1291,202 @@ function DashboardView({ todos }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: '1.25rem', marginBottom: 20 }}>Dashboard</h2>
-      <div className="stat-grid">
-        {stats.map((s, i) => (
-          <div key={i} className="stat-card">
-            <div className="stat-num" style={{ color: s.color }}>{s.num}</div>
-            <div className="stat-lbl">{s.lbl}</div>
-          </div>
-        ))}
-      </div>
-      {/* Chamados vencidos em destaque */}
-      {counts.vencidos > 0 && (
-        <div style={{ padding: '14px 18px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 'var(--radius)', marginBottom: 24, fontSize: '.875rem', color: '#991B1B' }}>
-          ⚠️ <strong>{counts.vencidos} chamado(s)</strong> com SLA vencido requerem atenção imediata.
+      {/* Header com título, filtro de competência e botão CSV */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: 4 }}>Dashboard</h2>
+          <p style={{ color: 'var(--muted)', fontSize: '.875rem' }}>Visão geral dos chamados por competência</p>
         </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Seletor de competência */}
+          <div style={{ position: 'relative' }}>
+            <button
+              className="btn btn-ghost"
+              style={{ fontFamily: 'Syne', fontWeight: 600, fontSize: '.875rem', gap: 8 }}
+              onClick={() => setShowPicker(v => !v)}
+            >
+              📅 {labelCompetencia} ▾
+            </button>
+            {showPicker && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200,
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                borderRadius: 14, boxShadow: 'var(--shadow-lg)', padding: '8px 0',
+                minWidth: 200, maxHeight: 260, overflowY: 'auto'
+              }}>
+                {competencias.map((c, i) => {
+                  const ativo = c.mes === competencia.mes && c.ano === competencia.ano;
+                  return (
+                    <button key={i} onClick={() => { setCompetencia({ mes: c.mes, ano: c.ano }); setShowPicker(false); }} style={{
+                      display: 'block', width: '100%', textAlign: 'left', padding: '9px 18px',
+                      background: ativo ? 'var(--accent)' : 'transparent',
+                      color: ativo ? '#fff' : 'var(--text)', border: 'none', cursor: 'pointer',
+                      fontSize: '.875rem', fontFamily: 'DM Sans', fontWeight: ativo ? 600 : 400,
+                      transition: 'background .1s'
+                    }}
+                      onMouseEnter={e => { if (!ativo) e.currentTarget.style.background = 'var(--bg)'; }}
+                      onMouseLeave={e => { if (!ativo) e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      {c.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          {/* Botão de download CSV */}
+          <button
+            className="btn btn-green"
+            style={{ fontSize: '.875rem' }}
+            disabled={!chamados.length}
+            onClick={exportarCSV}
+            title={chamados.length ? `Baixar ${chamados.length} chamados em CSV` : 'Sem dados para exportar'}
+          >
+            ⬇ Baixar CSV
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>Carregando…</div>
+      ) : (
+        <>
+          {/* Alerta SLA */}
+          {counts.vencidos > 0 && (
+            <div style={{ padding: '14px 18px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 'var(--radius)', marginBottom: 20, fontSize: '.875rem', color: '#991B1B' }}>
+              ⚠️ <strong>{counts.vencidos} chamado(s)</strong> com SLA vencido requerem atenção imediata.
+            </div>
+          )}
+          {counts.total === 0 && (
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
+              <div style={{ fontSize: '2rem', marginBottom: 10 }}>📭</div>
+              <p>Nenhum chamado encontrado em <strong>{labelCompetencia}</strong>.</p>
+            </div>
+          )}
+
+          {counts.total > 0 && (
+            <>
+              {/* Cards de status */}
+              <div className="stat-grid" style={{ marginBottom: 20 }}>
+                {stats.map((s, i) => (
+                  <div key={i} className="stat-card">
+                    <div className="stat-num" style={{ color: s.color }}>{s.num}</div>
+                    <div className="stat-lbl">{s.lbl}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Segunda linha de indicadores */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16, marginBottom: 28 }}>
+                <div className="stat-card">
+                  <div className="stat-num" style={{ color: '#10B981', fontSize: '1.8rem' }}>{taxaConclusao}%</div>
+                  <div className="stat-lbl">Taxa de Conclusão</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-num" style={{ color: '#EF4444', fontSize: '1.8rem' }}>{counts.alta}</div>
+                  <div className="stat-lbl">Criticidade Alta</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-num" style={{ color: '#F59E0B', fontSize: '1.8rem' }}>{counts.media}</div>
+                  <div className="stat-lbl">Criticidade Média</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-num" style={{ color: '#10B981', fontSize: '1.8rem' }}>{counts.baixa}</div>
+                  <div className="stat-lbl">Criticidade Baixa</div>
+                </div>
+                {slaMediaHoras !== null && (
+                  <div className="stat-card">
+                    <div className="stat-num" style={{ color: 'var(--accent2)', fontSize: '1.8rem' }}>{slaMediaHoras}h</div>
+                    <div className="stat-lbl">Tempo Médio de Resolução</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Barra de distribuição de status */}
+              <div className="card" style={{ marginBottom: 24 }}>
+                <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: '.875rem', marginBottom: 16 }}>Distribuição por Status</div>
+                <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', height: 28, gap: 2 }}>
+                  {[
+                    { val: counts.abertos,   color: '#F59E0B', lbl: 'Aberto' },
+                    { val: counts.analise,   color: '#3B82F6', lbl: 'Em Análise' },
+                    { val: counts.validacao, color: '#8B5CF6', lbl: 'Aguard. Validação' },
+                    { val: counts.concluido, color: '#10B981', lbl: 'Concluído' },
+                  ].filter(s => s.val > 0).map((s, i) => (
+                    <div key={i} title={`${s.lbl}: ${s.val}`} style={{
+                      flex: s.val, background: s.color, borderRadius: 4, minWidth: 4,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#fff', fontSize: '.7rem', fontWeight: 700, overflow: 'hidden', whiteSpace: 'nowrap'
+                    }}>
+                      {s.val > 2 ? `${s.val}` : ''}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
+                  {[
+                    { val: counts.abertos,   color: '#F59E0B', lbl: 'Aberto' },
+                    { val: counts.analise,   color: '#3B82F6', lbl: 'Em Análise' },
+                    { val: counts.validacao, color: '#8B5CF6', lbl: 'Aguard. Validação' },
+                    { val: counts.concluido, color: '#10B981', lbl: 'Concluído' },
+                  ].map((s, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.8rem' }}>
+                      <span style={{ width: 10, height: 10, borderRadius: 3, background: s.color, flexShrink: 0, display: 'inline-block' }} />
+                      {s.lbl}: <strong>{s.val}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tabela resumida dos chamados */}
+              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: '.875rem' }}>
+                    Chamados — {labelCompetencia}
+                    <span style={{ marginLeft: 8, fontWeight: 400, color: 'var(--muted)', fontSize: '.8rem' }}>({chamados.length} registros)</span>
+                  </div>
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.82rem' }}>
+                    <thead>
+                      <tr style={{ background: 'var(--bg)' }}>
+                        {['Número','Status','Criticidade','Complexidade','Solicitante','Responsável','Abertura','Prazo SLA','SLA'].map((h, i) => (
+                          <th key={i} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--muted)', fontFamily: 'Syne', whiteSpace: 'nowrap', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {chamados.map((c, i) => {
+                        const vencido = c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO';
+                        return (
+                          <tr key={c.id} style={{ borderBottom: i < chamados.length - 1 ? '1px solid var(--border)' : 'none', background: i % 2 === 1 ? 'var(--bg)' : 'transparent' }}>
+                            <td style={{ padding: '10px 14px', fontFamily: 'monospace', color: 'var(--accent2)', fontWeight: 600, whiteSpace: 'nowrap' }}>{c.numero_chamado}</td>
+                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                              <span className="badge" style={{ background: (STATUS_COLOR[c.status] || '#888') + '20', color: STATUS_COLOR[c.status] || '#888' }}>
+                                {STATUS_LABEL[c.status] || c.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 14px' }}>
+                              <span className="badge" style={{ background: (CRIT_COLOR[c.criticidade] || '#888') + '20', color: CRIT_COLOR[c.criticidade] || '#888' }}>{c.criticidade}</span>
+                            </td>
+                            <td style={{ padding: '10px 14px', color: 'var(--muted)' }}>{c.complexidade}</td>
+                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>{c.solicitante_nome || '—'}</td>
+                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{c.responsavel_nome || <em>Não assumido</em>}</td>
+                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{fmt(c.data_abertura)}</td>
+                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', color: vencido ? '#EF4444' : 'var(--muted)', fontWeight: vencido ? 700 : 400 }}>{fmt(c.prazo_limite)}</td>
+                            <td style={{ padding: '10px 14px' }}>
+                              {vencido
+                                ? <span className="badge" style={{ background: '#FEE2E2', color: '#DC2626' }}>⚠ Vencido</span>
+                                : <span className="badge" style={{ background: '#D1FAE5', color: '#065F46' }}>✓ OK</span>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+        </>
       )}
     </div>
   );
@@ -1495,7 +1765,7 @@ const decodeJwt = (tk) => {
   } catch { return null; }
 };
 
-const PAGE_DEFAULTS = { SOLICITANTE: 'meus-chamados', TECNICO: 'bandeja', MASTER_ADMIN: 'dashboard' };
+const PAGE_DEFAULTS = { SOLICITANTE: 'dashboard', TECNICO: 'dashboard', MASTER_ADMIN: 'dashboard' };
 
 export default function App() {
   const [token,        setToken]        = useState(() => localStorage.getItem('token'));
@@ -1585,12 +1855,7 @@ export default function App() {
         return nivel === 'MASTER_ADMIN' ? <LogsVisualizacaoView api={api} /> : null;
 
       case 'dashboard':
-        return (
-          <div>
-            <DashboardView todos={todos} />
-            <ListaChamados titulo="Chamados Ativos" chamados={todos.filter(c => c.status !== 'CONCLUIDO')} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} />
-          </div>
-        );
+        return <DashboardView api={api} user={user} todos={todos} />;
 
       case 'usuarios':
         return nivel === 'MASTER_ADMIN' ? <UsuariosView api={api} /> : null;
