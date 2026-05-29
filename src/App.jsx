@@ -941,8 +941,55 @@ function ResolucaoModal({ chamado, onClose, onConfirm }) {
     </Modal>
   );
 }
+function AvaliacaoModal({ chamado, onClose, onConfirm, api }) {
+  const [resolucaoText, setResolucaoText] = useState('Carregando resolução...');
 
-// ── Card de Chamado (Estilo iMaida com Corner Cutout) ──────────────────────────
+  useEffect(() => {
+    api(`/chamados/${chamado.id}/historico`).then(d => {
+      if (d) {
+        // Encontra a ação 'RESOLUCAO' mais recente
+        const resEntry = d.sort((a, b) => new Date(b.data_hora) - new Date(a.data_hora))
+                          .find(h => h.acao === 'RESOLUCAO');
+        if (resEntry) setResolucaoText(resEntry.comentario);
+        else setResolucaoText('Nenhuma descrição de resolução encontrada.');
+      }
+    });
+  }, [api, chamado.id]);
+
+  return (
+    <Modal onClose={onClose}>
+      <div className="modal-header">
+        <h2>Avaliar Resolução</h2>
+        <button className="btn-icon" onClick={onClose}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div className="modal-body">
+        <p style={{ color: 'var(--ink-soft)', marginBottom: 12 }}>O técnico registrou a seguinte resolução para o seu chamado:</p>
+        <div className="card" style={{ background: 'var(--paper)', padding: 16, marginBottom: 24, fontStyle: 'italic', color: 'var(--ink)' }}>
+          "{resolucaoText}"
+        </div>
+        <p style={{ color: 'var(--ink)', fontWeight: 600, marginBottom: 16 }}>O problema foi resolvido satisfatoriamente?</p>
+        <div className="button-group" style={{ justifyContent: 'flex-end' }}>
+          <button className="btn btn-danger" onClick={() => onConfirm(chamado.id, false)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Não, Recusar
+          </button>
+          <button className="btn btn-success" onClick={() => onConfirm(chamado.id, true)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Sim, Aprovar
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
 // ── Card de Chamado (Estilo iMaida com Corner Cutout) ──────────────────────────
 function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHistorico }) {
   const isMeu       = `${c.id_solicitante}` === `${userId}`;
@@ -959,55 +1006,35 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
   }
 
   const statusColor = STATUS_COLOR[c.status] || '#888';
-  const podeEditar  = (isMeu || nivel === 'MASTER_ADMIN') && c.status !== 'CONCLUIDO';
 
-  // Funções auxiliares para os botões
-  const handleAssumir = (e) => {
-    e.stopPropagation();
-    onAssumir(c.id);
-  };
-
-  const handleEditar = (e) => {
-    e.stopPropagation();
-    // Implementar edição se necessário
-    console.log('Editar chamado', c.id);
-  };
-
-  const handleFechar = (e) => {
-    e.stopPropagation();
-    onFechar(c);
-  };
-
-  const handleAprovar = (e) => {
-    e.stopPropagation();
-    onValidar(c.id, true);
-  };
-
-  const handleRejeitar = (e) => {
-    e.stopPropagation();
-    onValidar(c.id, false);
-  };
+  const handleAssumir = (e) => { e.stopPropagation(); onAssumir(c.id); };
+  const handleFechar = (e) => { e.stopPropagation(); onFechar(c); };
+  
+  const handleAvaliar = (e) => { e.stopPropagation(); onValidar(c); };
 
   return (
     <div className={`chamado-card ${slaClass}`}>
       {/* Corner cutout com botões */}
       <div className="corner">
-        {podeEditar && (
-          <button className="corner-btn" title="Editar" onClick={handleEditar}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-          </button>
-        )}
+        
+        {/* BOTÃO DE HISTÓRICO - Movido para cá (Botão de edição removido) */}
+        <button
+          className="corner-btn"
+          title="Histórico"
+          onClick={(e) => { e.stopPropagation(); onHistorico(c); }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </button>
+
         {podeAssumir && (
           <button className="corner-btn btn-assume" title="Assumir Chamado" onClick={handleAssumir}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
               <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
-              <line x1="6" y1="1" x2="6" y2="4"/>
-              <line x1="10" y1="1" x2="10" y2="4"/>
-              <line x1="14" y1="1" x2="14" y2="4"/>
+              <line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>
             </svg>
           </button>
         )}
@@ -1018,41 +1045,32 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
             </svg>
           </button>
         )}
+        
+        {/* NOVO BOTÃO ÚNICO DE AVALIAÇÃO */}
         {(isMeu && c.status === 'AGUARDANDO VALIDACAO') && (
-          <>
-            <button className="corner-btn btn-approve" title="Aprovar resolução" onClick={handleAprovar}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
-                <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-              </svg>
-            </button>
-            <button className="corner-btn btn-reject" title="Recusar resolução" onClick={handleRejeitar}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/>
-                <path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/>
-              </svg>
-            </button>
-          </>
+          <button 
+            className="corner-btn" 
+            style={{ 
+              width: 'auto', 
+              padding: '0 12px', 
+              borderRadius: '15px', 
+              fontSize: '0.72rem', 
+              fontWeight: 600,
+              background: 'var(--maida-blue)',
+              color: 'white',
+              borderColor: 'var(--maida-blue)'
+            }} 
+            title="Avaliar Resolução" 
+            onClick={handleAvaliar}
+          >
+            Avaliar Resolução
+          </button>
         )}
       </div>
 
-      {/* Header: ID + botão histórico */}
+      {/* Header limpo, apenas com o ID */}
       <div className="ticket-header">
         <div className="ticket-id">#{c.numero_chamado}</div>
-        <button
-          className="corner-btn"
-          style={{ marginRight: 4 }}
-          title="Histórico"
-          onClick={(e) => {
-            e.stopPropagation();
-            onHistorico(c);
-          }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-          </svg>
-        </button>
       </div>
 
       {/* Badges de status */}
@@ -1306,6 +1324,7 @@ function NovoChamadoView({ user, api, onSucesso }) {
 function ListaChamados({ titulo, chamados, userId, nivel, api, onRecarregar, registrarVisualizacao = false }) {
   const [histModal, setHistModal] = useState(null);
   const [resolModal, setResolModal] = useState(null);
+  const [avaliarModal, setAvaliarModal] = useState(null);
 
   useEffect(() => {
     if (registrarVisualizacao && chamados.length >= 0) {
@@ -1318,7 +1337,12 @@ function ListaChamados({ titulo, chamados, userId, nivel, api, onRecarregar, reg
 
   const assumir  = async id => { await api(`/chamados/${id}/assumir`, { method: 'PUT' }); onRecarregar(); };
   const fechar   = async (ch, txt) => { await api(`/chamados/${ch.id}/fechar`, { method: 'PUT', body: JSON.stringify({ descricaoResolucao: txt }) }); setResolModal(null); onRecarregar(); };
-  const validar  = async (id, ok) => { await api(`/chamados/${id}/validar`, { method: 'PUT', body: JSON.stringify({ aprovado: ok }) }); onRecarregar(); };
+  
+  const validar  = async (id, ok) => { 
+    await api(`/chamados/${id}/validar`, { method: 'PUT', body: JSON.stringify({ aprovado: ok }) }); 
+    setAvaliarModal(null);
+    onRecarregar(); 
+  };
 
   return (
     <div>
@@ -1338,12 +1362,17 @@ function ListaChamados({ titulo, chamados, userId, nivel, api, onRecarregar, reg
         <div className="tickets-grid">
           {chamados.map(c => (
             <ChamadoCard key={c.id} c={c} userId={userId} nivel={nivel}
-              onAssumir={assumir} onFechar={ch => setResolModal(ch)} onValidar={validar} onHistorico={ch => setHistModal(ch)} />
+              onAssumir={assumir} 
+              onFechar={ch => setResolModal(ch)} 
+              onValidar={ch => setAvaliarModal(ch)} 
+              onHistorico={ch => setHistModal(ch)} 
+            />
           ))}
         </div>
       )}
       {histModal  && <HistoricoModal chamado={histModal}  onClose={() => setHistModal(null)}  api={api} />}
       {resolModal && <ResolucaoModal chamado={resolModal} onClose={() => setResolModal(null)} onConfirm={txt => fechar(resolModal, txt)} />}
+      {avaliarModal && <AvaliacaoModal chamado={avaliarModal} onClose={() => setAvaliarModal(null)} onConfirm={validar} api={api} />}
     </div>
   );
 }
@@ -1353,6 +1382,7 @@ const CARGOS = [
   { id: 'SOLICITANTE',  label: 'Solicitante',  color: '#F59E0B', desc: 'Pode abrir e acompanhar chamados' },
   { id: 'TECNICO',      label: 'Técnico',      color: '#3B82F6', desc: 'Pode assumir e resolver chamados' },
   { id: 'MASTER_ADMIN', label: 'Master Admin', color: '#8B5CF6', desc: 'Acesso total ao sistema' },
+  
 ];
 
 function UsuarioModal({ usuario, onClose, onSalvar }) {
@@ -1760,7 +1790,11 @@ function DashboardView({ api, user }) {
 
       {loading ? <div className="card" style={{ textAlign: 'center' }}>Carregando…</div> : (
         <>
-          {counts.vencidos > 0 && <div className="card" style={{ background: '#FEF2F2', borderColor: '#FECACA', color: '#991B1B', marginBottom: 20 }}><strong>{counts.vencidos} chamado(s)</strong> com SLA vencido.</div>}
+          {counts.vencidos > 0 && user?.nivel_acesso !== 'SOLICITANTE' && (
+            <div className="card" style={{ background: '#FEF2F2', borderColor: '#FECACA', color: '#991B1B', marginBottom: 20 }}>
+                <strong>{counts.vencidos} chamado(s)</strong> com SLA vencido.
+            </div>
+            )}
           {counts.total === 0 ? <div className="card" style={{ textAlign: 'center' }}>Nenhum chamado encontrado em {labelCompetencia}.</div> : (
             <>
               <div className="stat-grid">
