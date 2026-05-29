@@ -39,7 +39,7 @@ const formatLocalDate = (dateStr) => {
 const fmt = d => d ? formatLocalDate(d) : '—';
 
 // ================================================================
-// NOVO CSS GLOBAL — Estética iMaida
+// CSS GLOBAL — Estética iMaida
 // ================================================================
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
@@ -302,19 +302,28 @@ const G = `
     margin: 0;
   }
 
-  /* Buttons */
+  /* Buttons - Enhanced Styling */
   .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
-    padding: 11px 22px;
+    padding: 10px 20px;
     border-radius: var(--r-full);
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     transition: var(--transition);
     cursor: pointer;
     border: none;
     font-family: 'Inter', sans-serif;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
   }
 
   .btn-primary {
@@ -323,7 +332,15 @@ const G = `
     box-shadow: var(--shadow);
   }
 
-  .btn-primary:hover { background: var(--maida-blue); transform: translateY(-1px); box-shadow: var(--shadow-blue); }
+  .btn-primary:hover { 
+    background: var(--maida-blue); 
+    transform: translateY(-2px); 
+    box-shadow: var(--shadow-blue);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
 
   .btn-secondary {
     background: white;
@@ -331,7 +348,12 @@ const G = `
     border: 1.5px solid var(--line);
   }
 
-  .btn-secondary:hover { background: var(--paper); color: var(--ink); border-color: var(--ink-mute); }
+  .btn-secondary:hover { 
+    background: var(--paper); 
+    color: var(--ink); 
+    border-color: var(--ink-mute);
+    transform: translateY(-1px);
+  }
 
   .btn-danger {
     background: white;
@@ -339,23 +361,49 @@ const G = `
     border: 1.5px solid var(--maida-pink-soft);
   }
 
-  .btn-danger:hover { background: var(--maida-pink); color: white; border-color: var(--maida-pink); }
+  .btn-danger:hover { 
+    background: var(--maida-pink); 
+    color: white; 
+    border-color: var(--maida-pink);
+    transform: translateY(-1px);
+  }
 
   .btn-success {
     background: #10B981;
-    color: #fff;
+    color: white;
   }
-  .btn-success:hover { background: #059669; transform: translateY(-1px); }
+  
+  .btn-success:hover { 
+    background: #059669; 
+    transform: translateY(-1px);
+  }
 
   .btn-warning {
     background: #F59E0B;
-    color: #fff;
+    color: white;
   }
-  .btn-warning:hover { background: #D97706; transform: translateY(-1px); }
+  
+  .btn-warning:hover { 
+    background: #D97706; 
+    transform: translateY(-1px);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1.5px solid var(--line);
+  }
+
+  .btn-outline:hover {
+    background: var(--line-soft);
+    color: var(--ink);
+    border-color: var(--ink-mute);
+  }
 
   .btn-icon {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
@@ -368,7 +416,33 @@ const G = `
     cursor: pointer;
   }
 
-  .btn-icon:hover { background: var(--maida-blue); color: white; border-color: var(--maida-blue); }
+  .btn-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .btn-icon:hover { 
+    background: var(--maida-blue); 
+    color: white; 
+    border-color: var(--maida-blue);
+    transform: scale(1.05);
+  }
+
+  .btn-sm {
+    padding: 6px 14px;
+    font-size: 0.75rem;
+  }
+
+  .btn-lg {
+    padding: 12px 28px;
+    font-size: 1rem;
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
 
   /* Cards */
   .card {
@@ -478,16 +552,13 @@ const G = `
   .chamado-card.sla-atencao { --accent: #d49500; --corner-bg: #fffbee; }
   .chamado-card.status-concluido { --accent: #16a34a; --corner-bg: #f0fdf4; }
 
-  /* ── Corner Cutout: faixa branca no topo-direito com botões ── */
+  /* Corner Cutout */
   .chamado-card .corner {
     position: absolute;
     top: 0;
     right: 0;
-    /* A faixa usa a cor de fundo do card para criar contraste */
     background: var(--corner-bg, var(--paper));
-    /* Recuo interno: padding-right alinha com a borda arredondada do card */
     padding: 9px 14px 10px 14px;
-    /* A borda-baixo-esquerda arredondada cria o "corte" visual */
     border-bottom-left-radius: 20px;
     display: flex;
     flex-direction: row;
@@ -496,8 +567,6 @@ const G = `
     z-index: 3;
   }
 
-  /* Pseudo-elementos que criam as "orelhas" do recorte, dando a sensação
-     de que a faixa branca foi recortada do canto do card */
   .chamado-card .corner::before {
     content: '';
     position: absolute;
@@ -507,7 +576,6 @@ const G = `
     height: 20px;
     background: transparent;
     border-top-right-radius: 20px;
-    /* box-shadow cria o "negativo" — a área do card aparece abaixo da faixa */
     box-shadow: 8px -8px 0 0 var(--corner-bg, var(--paper));
     pointer-events: none;
   }
@@ -525,7 +593,7 @@ const G = `
     pointer-events: none;
   }
 
-  /* Botões dentro do corner */
+  /* Corner buttons */
   .corner-btn {
     width: 30px;
     height: 30px;
@@ -542,6 +610,11 @@ const G = `
     flex-shrink: 0;
   }
 
+  .corner-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+
   .corner-btn:hover {
     background: var(--accent);
     color: white;
@@ -554,13 +627,12 @@ const G = `
   .corner-btn.btn-approve { background: #10B981; color: white; border-color: #10B981; }
   .corner-btn.btn-reject  { background: #EF4444; color: white; border-color: #EF4444; }
 
-  /* Conteúdo do card empurrado para baixo do corner */
+  /* Conteúdo do card */
   .chamado-card .ticket-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
-    /* garante que o header não fique atrás do corner */
     padding-right: 0;
     min-height: 28px;
   }
@@ -688,6 +760,13 @@ const G = `
 
   .modal-body { flex: 1; overflow-y: auto; padding: 24px 26px; }
 
+  /* Button group */
+  .button-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
   /* Animations */
   @keyframes fadeIn {
     from { opacity: 0; }
@@ -713,6 +792,7 @@ const G = `
     .top-bar .btn-primary { display: none; }
     .main-content { padding: 18px; }
     .page-title { font-size: 1.4rem; }
+    .btn { padding: 8px 16px; font-size: 0.8rem; }
   }
 `;
 
@@ -799,7 +879,11 @@ function HistoricoModal({ chamado, onClose, api }) {
           <div className="label">Histórico do Chamado</div>
           <h2>{chamado.numero_chamado}</h2>
         </div>
-        <button className="btn-icon" onClick={onClose}>✕</button>
+        <button className="btn-icon" onClick={onClose}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
       <div className="modal-body">
         <div className="card" style={{ padding: 12, marginBottom: 20, background: 'var(--paper)' }}>
@@ -832,7 +916,11 @@ function ResolucaoModal({ chamado, onClose, onConfirm }) {
     <Modal onClose={onClose}>
       <div className="modal-header">
         <h2>Finalizar Atendimento</h2>
-        <button className="btn-icon" onClick={onClose}>✕</button>
+        <button className="btn-icon" onClick={onClose}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
       <div className="modal-body">
         <p style={{ color: 'var(--ink-soft)', marginBottom: 20 }}>Descreva a solução aplicada. O solicitante deverá validar antes do chamado ser encerrado.</p>
@@ -840,15 +928,21 @@ function ResolucaoModal({ chamado, onClose, onConfirm }) {
           <label className="label">Descrição da Resolução</label>
           <textarea className="input-field" rows={5} value={texto} onChange={e => setTexto(e.target.value)} placeholder="Descreva detalhadamente o que foi feito…" />
         </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-success" disabled={!texto.trim()} onClick={() => onConfirm(texto)}>✅ Enviar para Validação</button>
+        <div className="button-group" style={{ justifyContent: 'flex-end' }}>
+          <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn btn-success" disabled={!texto.trim()} onClick={() => onConfirm(texto)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Enviar para Validação
+          </button>
         </div>
       </div>
     </Modal>
   );
 }
 
+// ── Card de Chamado (Estilo iMaida com Corner Cutout) ──────────────────────────
 // ── Card de Chamado (Estilo iMaida com Corner Cutout) ──────────────────────────
 function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHistorico }) {
   const isMeu       = `${c.id_solicitante}` === `${userId}`;
@@ -867,66 +961,92 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
   const statusColor = STATUS_COLOR[c.status] || '#888';
   const podeEditar  = (isMeu || nivel === 'MASTER_ADMIN') && c.status !== 'CONCLUIDO';
 
-  // Para permitir cliques nos botões sem acionar o card
-  useEffect(() => {
-    const handleAssumir = (e) => { if (e.detail === c.id) onAssumir(c.id); };
-    const handleFechar  = (e) => { if (e.detail === c.id) onFechar(c); };
-    const handleAprovar = (e) => { if (e.detail === c.id) onValidar(c.id, true); };
-    const handleRejeitar= (e) => { if (e.detail === c.id) onValidar(c.id, false); };
+  // Funções auxiliares para os botões
+  const handleAssumir = (e) => {
+    e.stopPropagation();
+    onAssumir(c.id);
+  };
 
-    window.addEventListener('assumirChamado', handleAssumir);
-    window.addEventListener('fecharChamado',  handleFechar);
-    window.addEventListener('aprovarChamado', handleAprovar);
-    window.addEventListener('rejeitarChamado',handleRejeitar);
+  const handleEditar = (e) => {
+    e.stopPropagation();
+    // Implementar edição se necessário
+    console.log('Editar chamado', c.id);
+  };
 
-    return () => {
-      window.removeEventListener('assumirChamado', handleAssumir);
-      window.removeEventListener('fecharChamado',  handleFechar);
-      window.removeEventListener('aprovarChamado', handleAprovar);
-      window.removeEventListener('rejeitarChamado',handleRejeitar);
-    };
-  }, [c.id, onAssumir, onFechar, onValidar]);
+  const handleFechar = (e) => {
+    e.stopPropagation();
+    onFechar(c);
+  };
 
-  // Monta HTML dos botões do corner
-  let cornerButtons = '';
+  const handleAprovar = (e) => {
+    e.stopPropagation();
+    onValidar(c.id, true);
+  };
 
-  if (podeEditar) {
-    cornerButtons += `<button class="corner-btn" title="Editar" onclick="window.dispatchEvent(new CustomEvent('editarChamado', { detail: ${c.id} }))">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-    </button>`;
-  }
-  if (podeAssumir) {
-    cornerButtons += `<button class="corner-btn btn-assume" title="Assumir Chamado" onclick="window.dispatchEvent(new CustomEvent('assumirChamado', { detail: ${c.id} }))">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-    </button>`;
-  }
-  if ((isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE') {
-    cornerButtons += `<button class="corner-btn btn-resolve" title="Finalizar Atendimento" onclick="window.dispatchEvent(new CustomEvent('fecharChamado', { detail: ${c.id} }))">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-    </button>`;
-  }
-  if (isMeu && c.status === 'AGUARDANDO VALIDACAO') {
-    cornerButtons += `<button class="corner-btn btn-approve" title="Aprovar resolução" onclick="window.dispatchEvent(new CustomEvent('aprovarChamado', { detail: ${c.id} }))">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
-    </button>`;
-    cornerButtons += `<button class="corner-btn btn-reject" title="Recusar resolução" onclick="window.dispatchEvent(new CustomEvent('rejeitarChamado', { detail: ${c.id} }))">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
-    </button>`;
-  }
+  const handleRejeitar = (e) => {
+    e.stopPropagation();
+    onValidar(c.id, false);
+  };
 
   return (
     <div className={`chamado-card ${slaClass}`}>
       {/* Corner cutout com botões */}
-      <div className="corner" dangerouslySetInnerHTML={{ __html: cornerButtons }} />
+      <div className="corner">
+        {podeEditar && (
+          <button className="corner-btn" title="Editar" onClick={handleEditar}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+        )}
+        {podeAssumir && (
+          <button className="corner-btn btn-assume" title="Assumir Chamado" onClick={handleAssumir}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
+              <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+              <line x1="6" y1="1" x2="6" y2="4"/>
+              <line x1="10" y1="1" x2="10" y2="4"/>
+              <line x1="14" y1="1" x2="14" y2="4"/>
+            </svg>
+          </button>
+        )}
+        {((isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE') && (
+          <button className="corner-btn btn-resolve" title="Finalizar Atendimento" onClick={handleFechar}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </button>
+        )}
+        {(isMeu && c.status === 'AGUARDANDO VALIDACAO') && (
+          <>
+            <button className="corner-btn btn-approve" title="Aprovar resolução" onClick={handleAprovar}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
+                <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+              </svg>
+            </button>
+            <button className="corner-btn btn-reject" title="Recusar resolução" onClick={handleRejeitar}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/>
+                <path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/>
+              </svg>
+            </button>
+          </>
+        )}
+      </div>
 
       {/* Header: ID + botão histórico */}
       <div className="ticket-header">
         <div className="ticket-id">#{c.numero_chamado}</div>
         <button
           className="corner-btn"
-          style={{ marginRight: cornerButtons ? 4 : 0 }}
+          style={{ marginRight: 4 }}
           title="Histórico"
-          onClick={() => onHistorico(c)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onHistorico(c);
+          }}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10"/>
@@ -940,7 +1060,7 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
         <Badge label={c.criticidade}                       color={CRIT_COLOR[c.criticidade]} />
         <Badge label={`Compl. ${c.complexidade}`}          color="#6B7280" />
         <Badge label={STATUS_LABEL[c.status] || c.status}  color={statusColor} />
-        {vencido && <Badge label="⚠ SLA" color="#EF4444" />}
+        {vencido && <Badge label="SLA" color="#EF4444" />}
       </div>
 
       {/* Título / descrição resumida */}
@@ -1044,7 +1164,7 @@ function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
     { id: 'novo-chamado',   icon: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>, label: 'Abrir Chamado' },
     { id: 'bandeja',        icon: <><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></>, label: 'Bandeja' },
     { id: 'usuarios',       icon: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>, label: 'Usuários' },
-    { id: 'logs-visualizacao', icon: <><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></>, label: 'Logs de Visualização' },
+    { id: 'logs-visualizacao', icon: <><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></>, label: 'Logs' },
   ];
 
   const items = nivel === 'MASTER_ADMIN' ? navAdmin : nivel === 'TECNICO' ? navTecnico : navSolicitante;
@@ -1072,14 +1192,14 @@ function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
             <span className="nivel-badge" style={{ background: meta.color + '30', color: meta.color }}>{meta.label}</span>
           </div>
         </div>
-        <button className="btn-secondary" style={{ width: '100%', justifyContent: 'center', marginBottom: '8px' }} onClick={onAbrirPerfil}>
+        <button className="btn btn-outline" style={{ width: '100%', marginBottom: '8px' }} onClick={onAbrirPerfil}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
             <circle cx="12" cy="7" r="4"/>
           </svg>
           Meu Perfil
         </button>
-        <button className="btn-secondary" style={{ width: '100%', justifyContent: 'center' }} onClick={onSair}>
+        <button className="btn btn-outline" style={{ width: '100%' }} onClick={onSair}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
             <polyline points="16 17 21 12 16 7"/>
@@ -1160,7 +1280,9 @@ function NovoChamadoView({ user, api, onSucesso }) {
                   <div key={cp} className="card" style={{ padding: 14, cursor: 'pointer', textAlign: 'center', borderColor: isSel ? 'var(--maida-blue)' : 'var(--line)', background: isSel ? 'var(--maida-blue-soft)' : 'var(--paper-pure)' }} onClick={() => setForm({ ...form, complexidade: cp })}>
                     <strong>{cp}</strong>
                     <div style={{ fontSize: '.7rem', color: 'var(--ink-soft)', marginTop: 4 }}>{cp === 'Alta' ? 'Solução complexa' : cp === 'Média' ? 'Solução moderada' : 'Solução simples'}</div>
-                    <div style={{ fontSize: '.7rem', color: 'var(--maida-blue)', marginTop: 4, fontWeight: 600 }}>{PRAZO_HORAS[form.criticidade][cp]}h de SLA</div>
+                    <div style={{ fontSize: '.7rem', color: 'var(--maida-blue)', marginTop: 4, fontWeight: 600 }}>
+                        {form.criticidade ? `${PRAZO_HORAS[form.criticidade][cp]}h de SLA` : 'SLA pendente'}
+                    </div>
                   </div>
                 );
               })}
@@ -1169,7 +1291,7 @@ function NovoChamadoView({ user, api, onSucesso }) {
 
           {form.criticidade && <SlaBox crit={form.criticidade} comp={form.complexidade} />}
 
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div className="button-group">
             <button className="btn btn-primary" type="submit" disabled={salvando || !form.descricao || !form.criticidade}>
               {salvando ? 'Abrindo...' : 'Abrir Chamado'}
             </button>
@@ -1258,7 +1380,11 @@ function UsuarioModal({ usuario, onClose, onSalvar }) {
     <Modal onClose={onClose}>
       <div className="modal-header">
         <h2>{isEdicao ? 'Editar Usuário' : 'Novo Usuário'}</h2>
-        <button className="btn-icon" onClick={onClose}>✕</button>
+        <button className="btn-icon" onClick={onClose}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
       <div className="modal-body">
         {erro && <div className="card" style={{ background: '#FEF2F2', color: '#EF4444', marginBottom: 16 }}>{erro}</div>}
@@ -1300,15 +1426,12 @@ function UsuarioModal({ usuario, onClose, onSalvar }) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+        <div className="button-group" style={{ justifyContent: 'flex-end' }}>
           <button className="btn btn-secondary" onClick={onClose}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             Cancelar
           </button>
           <button className="btn btn-primary" disabled={salvando} onClick={submit}>
-            {salvando ? 'Salvando…' : isEdicao
-              ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar</>
-              : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Cadastrar</>}
+            {salvando ? 'Salvando…' : (isEdicao ? 'Salvar' : 'Cadastrar')}
           </button>
         </div>
       </div>
@@ -1361,7 +1484,9 @@ function UsuariosView({ api }) {
       <div className="top-bar">
         <h1 className="page-title">Gerenciamento de Usuários</h1>
         <button className="btn btn-primary" onClick={() => setModal('novo')}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
           Novo Usuário
         </button>
       </div>
@@ -1377,10 +1502,10 @@ function UsuariosView({ api }) {
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
         <input className="input-field" style={{ maxWidth: 280 }} placeholder="Buscar por nome ou e-mail…" value={busca} onChange={e => setBusca(e.target.value)} />
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="button-group">
           {['TODOS', 'SOLICITANTE', 'TECNICO', 'MASTER_ADMIN'].map(n => {
             const meta = n === 'TODOS' ? { label: 'Todos', color: 'var(--ink)' } : NIVEL_META[n];
-            return <button key={n} className={`btn-secondary${filtroNivel === n ? ' active' : ''}`} onClick={() => setFiltroNivel(n)} style={{ fontSize: '.75rem', padding: '6px 14px' }}>{meta.label}</button>;
+            return <button key={n} className={`btn btn-outline btn-sm${filtroNivel === n ? ' active' : ''}`} onClick={() => setFiltroNivel(n)}>{meta.label}</button>;
           })}
         </div>
       </div>
@@ -1403,21 +1528,25 @@ function UsuariosView({ api }) {
                     <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: nvMeta.color + '20', color: nvMeta.color }}>{nvMeta.label}</span></td>
                     <td style={{ padding: '12px 16px', color: 'var(--ink-soft)' }}>{u.cargo_nome || '—'}</td>
                     <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: u.ativo ? '#D1FAE5' : '#FEE2E2', color: u.ativo ? '#065F46' : '#991B1B' }}>{u.ativo ? 'Ativo' : 'Inativo'}</span></td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn-icon" style={{ width: 32, height: 32 }} title="Editar" onClick={() => setModal(u)}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                          </button>
-                          <button className="btn-icon" style={{ width: 32, height: 32, color: u.ativo ? '#EF4444' : '#10B981' }} title={u.ativo ? 'Desativar' : 'Ativar'} onClick={() => toggleAtivo(u)}>
-                            {u.ativo
-                              ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-                              : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-                          </button>
-                          <button className="btn-icon" style={{ width: 32, height: 32, color: '#EF4444' }} title="Excluir" onClick={() => setConfirmDel(u)}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                          </button>
-                        </div>
-                      </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <div className="button-group" style={{ gap: 6 }}>
+                        <button className="btn-icon" style={{ width: 32, height: 32 }} title="Editar" onClick={() => setModal(u)}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                        </button>
+                        <button className="btn-icon" style={{ width: 32, height: 32, color: u.ativo ? '#EF4444' : '#10B981' }} title={u.ativo ? 'Desativar' : 'Ativar'} onClick={() => toggleAtivo(u)}>
+                          {u.ativo
+                            ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                            : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                        </button>
+                        <button className="btn-icon" style={{ width: 32, height: 32, color: '#EF4444' }} title="Excluir" onClick={() => setConfirmDel(u)}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -1431,10 +1560,9 @@ function UsuariosView({ api }) {
           <div className="modal-header"><h2>Excluir Usuário</h2><button className="btn-icon" onClick={() => setConfirmDel(null)}>✕</button></div>
           <div className="modal-body">
             <p>Tem certeza que deseja excluir <strong>{confirmDel.nome_completo}</strong>? Esta ação não pode ser desfeita.</p>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
-              <button className="btn-secondary" onClick={() => setConfirmDel(null)}>Cancelar</button>
+            <div className="button-group" style={{ justifyContent: 'flex-end', marginTop: 20 }}>
+              <button className="btn btn-secondary" onClick={() => setConfirmDel(null)}>Cancelar</button>
               <button className="btn btn-danger" onClick={() => excluir(confirmDel.id)}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                 Excluir
               </button>
             </div>
@@ -1488,13 +1616,17 @@ function LogsVisualizacaoView({ api }) {
       </div>}
       <div className="top-bar">
         <h1 className="page-title">Logs de Visualização</h1>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="button-group">
           <button className="btn btn-secondary" onClick={() => setShowFilters(!showFilters)}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+            </svg>
             {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
           </button>
           <button className="btn btn-danger" onClick={() => setConfirmDelete({ type: 'all' })}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+            </svg>
             Limpar Todos
           </button>
         </div>
@@ -1537,12 +1669,16 @@ function LogsVisualizacaoView({ api }) {
                       <td style={{ padding: '12px 16px' }}>{new Date(log.data_visualizacao).toLocaleString('pt-BR')}</td>
                       <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: '#3B82F620', color: '#3B82F6' }}>{log.total_chamados_visiveis} chamados</span></td>
                       <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', gap: 6 }}>
+                        <div className="button-group" style={{ gap: 6 }}>
                           <button className="btn-icon" style={{ width: 32, height: 32, color: '#EF4444' }} title="Excluir log" onClick={() => setConfirmDelete({ type: 'single', id: log.id })}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+                            </svg>
                           </button>
                           <button className="btn-icon" style={{ width: 32, height: 32, color: '#F59E0B' }} title="Excluir logs do usuário" onClick={() => setConfirmDelete({ type: 'user', usuarioId: log.id_usuario, nome: log.nome_completo })}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/>
+                            </svg>
                           </button>
                         </div>
                       </td>
@@ -1553,10 +1689,10 @@ function LogsVisualizacaoView({ api }) {
             </table>
           </div>
           {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 24 }}>
-              <button className="btn-secondary" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - limit))}>← Anterior</button>
+            <div className="button-group" style={{ justifyContent: 'center', marginTop: 24 }}>
+              <button className="btn btn-secondary" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - limit))}>← Anterior</button>
               <span style={{ padding: '8px 16px', background: 'var(--paper-pure)', border: '1px solid var(--line)', borderRadius: 8 }}>Página {currentPage} de {totalPages}</span>
-              <button className="btn-secondary" disabled={offset + limit >= total} onClick={() => setOffset(offset + limit)}>Próxima →</button>
+              <button className="btn btn-secondary" disabled={offset + limit >= total} onClick={() => setOffset(offset + limit)}>Próxima →</button>
             </div>
           )}
         </>
@@ -1566,9 +1702,9 @@ function LogsVisualizacaoView({ api }) {
           <div className="modal-header"><h2>{confirmDelete.type === 'all' ? 'Limpar Todos os Logs' : confirmDelete.type === 'user' ? `Excluir Logs de ${confirmDelete.nome}` : 'Excluir Log'}</h2><button className="btn-icon" onClick={() => setConfirmDelete(null)}>✕</button></div>
           <div className="modal-body">
             <p>{confirmDelete.type === 'all' && 'Tem certeza que deseja excluir TODOS os logs?'}{confirmDelete.type === 'user' && `Tem certeza que deseja excluir todos os logs do usuário "${confirmDelete.nome}"?`}{confirmDelete.type === 'single' && 'Tem certeza que deseja excluir este log?'}</p>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
-              <button className="btn-secondary" onClick={() => setConfirmDelete(null)}>Cancelar</button>
-              <button className="btn-danger" onClick={() => { if (confirmDelete.type === 'all') excluirTodosLogs(); else if (confirmDelete.type === 'user') excluirLogsPorUsuario(confirmDelete.usuarioId); else excluirLog(confirmDelete.id); }}>🗑 Excluir</button>
+            <div className="button-group" style={{ justifyContent: 'flex-end', marginTop: 20 }}>
+              <button className="btn btn-secondary" onClick={() => setConfirmDelete(null)}>Cancelar</button>
+              <button className="btn btn-danger" onClick={() => { if (confirmDelete.type === 'all') excluirTodosLogs(); else if (confirmDelete.type === 'user') excluirLogsPorUsuario(confirmDelete.usuarioId); else excluirLog(confirmDelete.id); }}>Excluir</button>
             </div>
           </div>
         </Modal>
@@ -1577,6 +1713,7 @@ function LogsVisualizacaoView({ api }) {
   );
 }
 
+// ── View: Dashboard (Estilo iMaida) ─────────────────────────────────────────
 // ── View: Dashboard (Estilo iMaida) ─────────────────────────────────────────
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 function gerarCompetencias() { const now = new Date(); const lista = []; for (let i = 11; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); lista.push({ mes: d.getMonth() + 1, ano: d.getFullYear(), label: `${MESES[d.getMonth()]}/${d.getFullYear()}` }); } return lista.reverse(); }
@@ -1603,7 +1740,9 @@ function DashboardView({ api, user }) {
       <div className="top-bar">
         <h1 className="page-title">Dashboard</h1>
         <div style={{ position: 'relative' }}>
-          <button className="btn-secondary" onClick={() => setShowPicker(v => !v)}>📅 {labelCompetencia} ▾</button>
+          <button className="btn btn-secondary" onClick={() => setShowPicker(v => !v)}>
+            {labelCompetencia} ▾
+          </button>
           {showPicker && (
             <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200, background: 'var(--paper-pure)', border: '1px solid var(--line)', borderRadius: 14, boxShadow: 'var(--shadow-lg)', padding: '8px 0', minWidth: 200, maxHeight: 260, overflowY: 'auto' }}>
               {competencias.map((c, i) => {
@@ -1621,28 +1760,62 @@ function DashboardView({ api, user }) {
 
       {loading ? <div className="card" style={{ textAlign: 'center' }}>Carregando…</div> : (
         <>
-          {counts.vencidos > 0 && <div className="card" style={{ background: '#FEF2F2', borderColor: '#FECACA', color: '#991B1B', marginBottom: 20 }}>⚠️ <strong>{counts.vencidos} chamado(s)</strong> com SLA vencido.</div>}
+          {counts.vencidos > 0 && <div className="card" style={{ background: '#FEF2F2', borderColor: '#FECACA', color: '#991B1B', marginBottom: 20 }}><strong>{counts.vencidos} chamado(s)</strong> com SLA vencido.</div>}
           {counts.total === 0 ? <div className="card" style={{ textAlign: 'center' }}>Nenhum chamado encontrado em {labelCompetencia}.</div> : (
             <>
               <div className="stat-grid">
-                {[{ num: counts.total, lbl: 'Total', color: 'var(--ink)' }, { num: counts.abertos, lbl: 'Abertos', color: '#F59E0B' }, { num: counts.analise, lbl: 'Em Análise', color: '#3B82F6' }, { num: counts.validacao, lbl: 'Aguard. Validação', color: '#8B5CF6' }, { num: counts.concluido, lbl: 'Concluídos', color: '#10B981' }, { num: counts.vencidos, lbl: 'SLA Vencido', color: '#EF4444' }].map((s, i) => (
-                  <div key={i} className="stat-card"><div className="stat-number" style={{ color: s.color }}>{s.num}</div><div className="stat-label">{s.lbl}</div></div>
+                {[
+                  { num: counts.total, lbl: 'Total', color: 'var(--ink)' }, 
+                  { num: counts.abertos, lbl: 'Abertos', color: '#F59E0B' }, 
+                  { num: counts.analise, lbl: 'Em Análise', color: '#3B82F6' }, 
+                  { num: counts.validacao, lbl: 'Aguard. Validação', color: '#8B5CF6' }, 
+                  { num: counts.concluido, lbl: 'Concluídos', color: '#10B981' }, 
+                  { num: counts.vencidos, lbl: 'SLA Vencido', color: '#EF4444' }
+                ].map((s, i) => (
+                  <div key={i} className="stat-card">
+                    <div className="stat-number" style={{ color: s.color }}>{s.num}</div>
+                    <div className="stat-label">{s.lbl}</div>
+                  </div>
                 ))}
               </div>
 
               <div className="stat-grid">
-                <div className="stat-card"><div className="stat-number" style={{ color: '#10B981' }}>{taxaConclusao}%</div><div className="stat-label">Taxa de Conclusão</div></div>
-                <div className="stat-card"><div className="stat-number" style={{ color: '#EF4444' }}>{counts.alta}</div><div className="stat-label">Criticidade Alta</div></div>
-                <div className="stat-card"><div className="stat-number" style={{ color: '#F59E0B' }}>{counts.media}</div><div className="stat-label">Criticidade Média</div></div>
-                <div className="stat-card"><div className="stat-number" style={{ color: '#10B981' }}>{counts.baixa}</div><div className="stat-label">Criticidade Baixa</div></div>
-                {slaMediaHoras !== null && <div className="stat-card"><div className="stat-number" style={{ color: 'var(--maida-blue)' }}>{slaMediaHoras}h</div><div className="stat-label">Tempo Médio de Resolução</div></div>}
+                <div className="stat-card">
+                  <div className="stat-number" style={{ color: '#10B981' }}>{taxaConclusao}%</div>
+                  <div className="stat-label">Taxa de Conclusão</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-number" style={{ color: '#EF4444' }}>{counts.alta}</div>
+                  <div className="stat-label">Criticidade Alta</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-number" style={{ color: '#F59E0B' }}>{counts.media}</div>
+                  <div className="stat-label">Criticidade Média</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-number" style={{ color: '#10B981' }}>{counts.baixa}</div>
+                  <div className="stat-label">Criticidade Baixa</div>
+                </div>
+                {slaMediaHoras !== null && (
+                  <div className="stat-card">
+                    <div className="stat-number" style={{ color: 'var(--maida-blue)' }}>{slaMediaHoras}h</div>
+                    <div className="stat-label">Tempo Médio de Resolução</div>
+                  </div>
+                )}
               </div>
 
               <div className="card">
                 <h3 style={{ marginBottom: 16 }}>Distribuição por Status</h3>
                 <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', height: 28, gap: 2 }}>
-                  {[{ val: counts.abertos, color: '#F59E0B', lbl: 'Aberto' }, { val: counts.analise, color: '#3B82F6', lbl: 'Em Análise' }, { val: counts.validacao, color: '#8B5CF6', lbl: 'Aguard. Validação' }, { val: counts.concluido, color: '#10B981', lbl: 'Concluído' }].filter(s => s.val > 0).map((s, i) => (
-                    <div key={i} title={`${s.lbl}: ${s.val}`} style={{ flex: s.val, background: s.color, borderRadius: 4, minWidth: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '.7rem', fontWeight: 700 }}>{s.val > 2 ? `${s.val}` : ''}</div>
+                  {[
+                    { val: counts.abertos, color: '#F59E0B', lbl: 'Aberto' }, 
+                    { val: counts.analise, color: '#3B82F6', lbl: 'Em Análise' }, 
+                    { val: counts.validacao, color: '#8B5CF6', lbl: 'Aguard. Validação' }, 
+                    { val: counts.concluido, color: '#10B981', lbl: 'Concluído' }
+                  ].filter(s => s.val > 0).map((s, i) => (
+                    <div key={i} title={`${s.lbl}: ${s.val}`} style={{ flex: s.val, background: s.color, borderRadius: 4, minWidth: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '.7rem', fontWeight: 700 }}>
+                      {s.val > 2 ? `${s.val}` : ''}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1653,21 +1826,48 @@ function DashboardView({ api, user }) {
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.82rem' }}>
-                    <thead><tr style={{ background: 'var(--paper)' }}>{['Número','Status','Criticidade','Complexidade','Solicitante','Responsável','Abertura','Prazo SLA','SLA'].map(h => <th key={h} style={{ padding: '10px 14px', textAlign: 'left' }}>{h}</th>)}</tr></thead>
+                    <thead>
+                      <tr style={{ background: 'var(--paper)' }}>
+                        <th style={{ padding: '10px 14px', textAlign: 'left' }}>Número</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left' }}>Status</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left' }}>Criticidade</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left' }}>Complexidade</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left' }}>Solicitante</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left' }}>Responsável</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left' }}>Abertura</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left' }}>Prazo SLA</th>
+                        <th style={{ padding: '10px 14px', textAlign: 'left' }}>SLA</th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {chamados.map((c, i) => {
                         const vencido = c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO';
                         return (
                           <tr key={c.id} style={{ borderBottom: i < chamados.length - 1 ? '1px solid var(--line)' : 'none' }}>
                             <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 600 }}>{c.numero_chamado}</td>
-                            <td style={{ padding: '10px 14px' }}><span className="badge" style={{ background: (STATUS_COLOR[c.status] || '#888') + '20', color: STATUS_COLOR[c.status] || '#888' }}>{STATUS_LABEL[c.status] || c.status}</span></td>
-                            <td style={{ padding: '10px 14px' }}><span className="badge" style={{ background: (CRIT_COLOR[c.criticidade] || '#888') + '20', color: CRIT_COLOR[c.criticidade] || '#888' }}>{c.criticidade}</span></td>
+                            <td style={{ padding: '10px 14px' }}>
+                              <span className="badge" style={{ background: (STATUS_COLOR[c.status] || '#888') + '20', color: STATUS_COLOR[c.status] || '#888' }}>
+                                {STATUS_LABEL[c.status] || c.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 14px' }}>
+                              <span className="badge" style={{ background: (CRIT_COLOR[c.criticidade] || '#888') + '20', color: CRIT_COLOR[c.criticidade] || '#888' }}>
+                                {c.criticidade}
+                              </span>
+                            </td>
                             <td style={{ padding: '10px 14px', color: 'var(--ink-soft)' }}>{c.complexidade}</td>
                             <td style={{ padding: '10px 14px' }}>{c.solicitante_nome || '—'}</td>
                             <td style={{ padding: '10px 14px', color: 'var(--ink-soft)' }}>{c.responsavel_nome || '—'}</td>
                             <td style={{ padding: '10px 14px', color: 'var(--ink-soft)' }}>{fmt(c.data_abertura)}</td>
-                            <td style={{ padding: '10px 14px', color: vencido ? '#EF4444' : 'var(--ink-soft)', fontWeight: vencido ? 700 : 400 }}>{fmt(c.prazo_limite)}</td>
-                            <td style={{ padding: '10px 14px' }}>{vencido ? <span className="badge" style={{ background: '#FEE2E2', color: '#DC2626' }}>⚠ Vencido</span> : <span className="badge" style={{ background: '#D1FAE5', color: '#065F46' }}>✓ OK</span>}</td>
+                            <td style={{ padding: '10px 14px', color: vencido ? '#EF4444' : 'var(--ink-soft)', fontWeight: vencido ? 700 : 400 }}>
+                              {fmt(c.prazo_limite)}
+                            </td>
+                            <td style={{ padding: '10px 14px' }}>
+                              {vencido ? 
+                                <span className="badge" style={{ background: '#FEE2E2', color: '#DC2626' }}>Vencido</span> : 
+                                <span className="badge" style={{ background: '#D1FAE5', color: '#065F46' }}>OK</span>
+                              }
+                            </td>
                           </tr>
                         );
                       })}
@@ -1727,9 +1927,9 @@ function PerfilModal({ user, onClose, onPerfilAtualizado }) {
             <div style={{ marginBottom: 14 }}><label className="label">Confirmar Nova Senha</label><input className="input-field" type="password" value={form.confirmar_nova_senha} onChange={e => setForm({ ...form, confirmar_nova_senha: e.target.value })} /></div>
           </>
         )}
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" disabled={salvando} onClick={submit}>{salvando ? 'Salvando…' : '💾 Salvar'}</button>
+        <div className="button-group" style={{ justifyContent: 'flex-end', marginTop: 16 }}>
+          <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn btn-primary" disabled={salvando} onClick={submit}>{salvando ? 'Salvando…' : 'Salvar'}</button>
         </div>
       </div>
     </Modal>
