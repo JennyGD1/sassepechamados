@@ -13,9 +13,9 @@ if (typeof window !== 'undefined' && import.meta.env?.PROD) {
 // ── Constantes ────────────────────────────────────────────────────────────────
 const PRAZO_HORAS = { Alta: { Alta: 16, Média: 8, Baixa: 4 }, Média: { Alta: 48, Média: 24, Baixa: 12 }, Baixa: { Alta: 72, Média: 48, Baixa: 24 } };
 const CRITICIDADE_INFO = {
-  Alta:  { label: 'Indisponibilidade total do sistema',              icon: '🔴', desc: 'O sistema está completamente fora do ar ou inacessível para todos os usuários.' },
-  Média: { label: 'Falhas parciais ou em módulos secundários',       icon: '🟡', desc: 'Parte do sistema apresenta falhas, mas a operação principal continua funcionando.' },
-  Baixa: { label: 'Impacto baixo, sem prejuízo imediato à operação', icon: '🟢', desc: 'Problema de baixo impacto, pode aguardar atendimento dentro do prazo normal.' }
+  Alta:  { label: 'Indisponibilidade total do sistema',              desc: 'O sistema está completamente fora do ar ou inacessível para todos os usuários.' },
+  Média: { label: 'Falhas parciais ou em módulos secundários',       desc: 'Parte do sistema apresenta falhas, mas a operação principal continua funcionando.' },
+  Baixa: { label: 'Impacto baixo, sem prejuízo imediato à operação', desc: 'Problema de baixo impacto, pode aguardar atendimento dentro do prazo normal.' }
 };
 const STATUS_COLOR = { 'ABERTO': '#F59E0B', 'EM ANALISE': '#3B82F6', 'AGUARDANDO VALIDACAO': '#8B5CF6', 'CONCLUIDO': '#10B981' };
 const STATUS_LABEL = { 'ABERTO': 'Aberto', 'EM ANALISE': 'Em Análise', 'AGUARDANDO VALIDACAO': 'Aguard. Validação', 'CONCLUIDO': 'Concluído' };
@@ -443,80 +443,138 @@ const G = `
 
   .chamado-card {
     --accent: var(--maida-blue);
+    --corner-bg: var(--paper);
     background: var(--paper-pure);
     border-radius: var(--r-lg);
     padding: 24px;
+    padding-top: 20px;
     position: relative;
     border: 1px solid var(--line);
     transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out);
     display: flex;
     flex-direction: column;
     isolation: isolate;
+    overflow: hidden;
   }
 
   .chamado-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-
-  /* Corner Cutout */
-  .chamado-card .corner {
-    position: absolute;
-    top: 0;
-    right: 0;
-    background: var(--paper);
-    padding: 10px 10px 0 0;
-    border-bottom-left-radius: 22px;
-    display: flex;
-    gap: 8px;
-    z-index: 3;
-  }
-
-  .chamado-card .corner::before,
-  .chamado-card .corner::after {
-    content: '';
-    position: absolute;
-    width: 18px;
-    height: 18px;
-    background: transparent;
-  }
-
-  .chamado-card .corner::before {
-    top: 0;
-    right: 100%;
-    border-top-right-radius: 18px;
-    box-shadow: 6px -6px 0 var(--paper);
-  }
-
-  .chamado-card .corner::after {
-    top: 100%;
-    right: 0;
-    border-top-right-radius: 18px;
-    box-shadow: 6px -6px 0 var(--paper);
-  }
 
   /* Faixa lateral de status */
   .chamado-card::after {
     content: '';
     position: absolute;
     left: 0;
-    top: 24px;
-    bottom: 24px;
+    top: 20px;
+    bottom: 20px;
     width: 3px;
     background: var(--accent);
     border-radius: 0 3px 3px 0;
     opacity: 0.8;
+    transition: background 0.3s;
   }
 
-  .chamado-card.sla-ok { --accent: var(--maida-blue); }
-  .chamado-card.sla-vencido { --accent: var(--maida-pink); }
+  .chamado-card.sla-ok    { --accent: var(--maida-blue); }
+  .chamado-card.sla-vencido { --accent: var(--maida-pink); --corner-bg: #fff5f9; }
+  .chamado-card.sla-atencao { --accent: #d49500; --corner-bg: #fffbee; }
+  .chamado-card.status-concluido { --accent: #16a34a; --corner-bg: #f0fdf4; }
 
-  .ticket-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  /* ── Corner Cutout: faixa branca no topo-direito com botões ── */
+  .chamado-card .corner {
+    position: absolute;
+    top: 0;
+    right: 0;
+    /* A faixa usa a cor de fundo do card para criar contraste */
+    background: var(--corner-bg, var(--paper));
+    /* Recuo interno: padding-right alinha com a borda arredondada do card */
+    padding: 9px 14px 10px 14px;
+    /* A borda-baixo-esquerda arredondada cria o "corte" visual */
+    border-bottom-left-radius: 20px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    z-index: 3;
+  }
+
+  /* Pseudo-elementos que criam as "orelhas" do recorte, dando a sensação
+     de que a faixa branca foi recortada do canto do card */
+  .chamado-card .corner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 100%;
+    width: 20px;
+    height: 20px;
+    background: transparent;
+    border-top-right-radius: 20px;
+    /* box-shadow cria o "negativo" — a área do card aparece abaixo da faixa */
+    box-shadow: 8px -8px 0 0 var(--corner-bg, var(--paper));
+    pointer-events: none;
+  }
+
+  .chamado-card .corner::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    background: transparent;
+    border-top-right-radius: 20px;
+    box-shadow: 8px -8px 0 0 var(--corner-bg, var(--paper));
+    pointer-events: none;
+  }
+
+  /* Botões dentro do corner */
+  .corner-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1.5px solid var(--line);
+    background: var(--paper-pure);
+    color: var(--ink-soft);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.72rem;
+    transition: all 0.22s var(--ease-out);
+    flex-shrink: 0;
+  }
+
+  .corner-btn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    transform: scale(1.1);
+  }
+
+  .corner-btn.btn-assume  { background: var(--maida-blue); color: white; border-color: var(--maida-blue); }
+  .corner-btn.btn-resolve { background: var(--maida-blue); color: white; border-color: var(--maida-blue); }
+  .corner-btn.btn-approve { background: #10B981; color: white; border-color: #10B981; }
+  .corner-btn.btn-reject  { background: #EF4444; color: white; border-color: #EF4444; }
+
+  /* Conteúdo do card empurrado para baixo do corner */
+  .chamado-card .ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    /* garante que o header não fique atrás do corner */
+    padding-right: 0;
+    min-height: 28px;
+  }
 
   .ticket-id {
-    background: #5b6eab;
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    color: var(--accent);
     padding: 3px 10px 3px 8px;
     border-radius: 6px;
-    font-weight: 600;
-    font-size: 0.7rem;
-    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
   }
 
   .badge {
@@ -531,15 +589,15 @@ const G = `
 
   .ticket-title {
     font-family: 'Bricolage Grotesque';
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     font-weight: 600;
-    line-height: 1.25;
+    line-height: 1.3;
     margin-bottom: 12px;
     color: var(--ink);
   }
 
   .ticket-desc {
-    font-size: 13.5px;
+    font-size: 13px;
     color: var(--ink-soft);
     line-height: 1.55;
     flex: 1;
@@ -550,7 +608,7 @@ const G = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-top: 16px;
+    padding-top: 14px;
     margin-top: auto;
     border-top: 1px dashed var(--line);
     gap: 12px;
@@ -682,7 +740,11 @@ function SlaBox({ crit, comp }) {
   return (
     <div className="card" style={{ background: 'linear-gradient(135deg, #1A1714 0%, #2d2926 100%)', color: '#fff', marginBottom: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div style={{ fontSize: '1.75rem' }}>⏱</div>
+        <div style={{ fontSize: '1.75rem' }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
         <div>
           <div style={{ fontSize: '.7rem', opacity: .7, fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>Prazo SLA</div>
           <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{data.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })}</div>
@@ -700,7 +762,7 @@ function CriticidadeBalloon({ crit }) {
   return (
     <div className="card" style={{ background: color + '12', borderColor: color, marginTop: 12, padding: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-        <span>{info.icon}</span>
+        <svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill={color}/></svg>
         <strong style={{ fontSize: '.875rem', color }}>{info.label}</strong>
       </div>
       <p style={{ fontSize: '.8125rem', color: 'var(--ink-soft)', lineHeight: 1.5 }}>{info.desc}</p>
@@ -710,11 +772,11 @@ function CriticidadeBalloon({ crit }) {
 
 // ── Histórico e Modais Auxiliares ─────────────────────────────────────────────
 const ACAO_META = {
-  ABERTURA:   { icon: '🟢', label: 'Abertura',   color: '#10B981' },
-  ATRIBUICAO: { icon: '🔵', label: 'Atribuição', color: '#3B82F6' },
-  RESOLUCAO:  { icon: '🟡', label: 'Resolução',  color: '#F59E0B' },
-  APROVACAO:  { icon: '✅', label: 'Aprovação',  color: '#10B981' },
-  RECUSA:     { icon: '❌', label: 'Recusa',     color: '#EF4444' },
+  ABERTURA:   { label: 'Abertura',   color: '#10B981' },
+  ATRIBUICAO: { label: 'Atribuição', color: '#3B82F6' },
+  RESOLUCAO:  { label: 'Resolução',  color: '#F59E0B' },
+  APROVACAO:  { label: 'Aprovação',  color: '#10B981' },
+  RECUSA:     { label: 'Recusa',     color: '#EF4444' },
 };
 
 function HistoricoModal({ chamado, onClose, api }) {
@@ -750,7 +812,7 @@ function HistoricoModal({ chamado, onClose, api }) {
               <div style={{ width: 8, height: 8, borderRadius: '50%', marginTop: 6, background: meta.color, flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                  <span style={{ fontWeight: 600, fontSize: '.875rem' }}>{meta.icon} {meta.label}</span>
+                  <span style={{ fontWeight: 600, fontSize: '.875rem' }}>{meta.label}</span>
                   <span style={{ fontSize: '.75rem', color: 'var(--ink-faint)' }}>{fmt(h.data_hora)}</span>
                 </div>
                 <div style={{ fontSize: '.8rem', color: 'var(--ink-soft)', marginBottom: 4 }}>por {h.nome_completo}</div>
@@ -793,81 +855,110 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
   const isResp      = `${c.id_responsavel}` === `${userId}`;
   const vencido     = c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO';
   const podeAssumir = !c.id_responsavel && !isMeu && (nivel === 'TECNICO' || nivel === 'MASTER_ADMIN');
-  
+
   let slaClass = 'sla-ok';
-  if (vencido) slaClass = 'sla-vencido';
-  
+  if (c.status === 'CONCLUIDO') slaClass = 'status-concluido';
+  else if (vencido) slaClass = 'sla-vencido';
+  else if (c.prazo_limite) {
+    const diffH = (new Date(c.prazo_limite) - new Date()) / 36e5;
+    if (diffH < 4) slaClass = 'sla-atencao';
+  }
+
   const statusColor = STATUS_COLOR[c.status] || '#888';
-  
-  // Corner buttons
-  let cornerButtons = '';
-  const podeEditar = (isMeu || nivel === 'MASTER_ADMIN') && c.status !== 'CONCLUIDO';
-  
-  if (podeEditar) {
-    cornerButtons += `<button class="btn-icon" style="width: 32px; height: 32px;" onclick="window.dispatchEvent(new CustomEvent('editarChamado', { detail: ${c.id} }))"><i class="fa-regular fa-pen-to-square"></i></button>`;
-  }
-  if (podeAssumir) {
-    cornerButtons += `<button class="btn-icon" style="width: 32px; height: 32px; background: var(--maida-blue); color: white;" onclick="window.dispatchEvent(new CustomEvent('assumirChamado', { detail: ${c.id} }))"><i class="fa-solid fa-hand-holding-hand"></i></button>`;
-  }
-  if ((isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE') {
-    cornerButtons += `<button class="btn-icon" style="width: 32px; height: 32px; background: var(--maida-blue); color: white;" onclick="window.dispatchEvent(new CustomEvent('fecharChamado', { detail: ${c.id} }))"><i class="fa-solid fa-check"></i></button>`;
-  }
-  if (isMeu && c.status === 'AGUARDANDO VALIDACAO') {
-    cornerButtons += `<button class="btn-icon" style="width: 32px; height: 32px; background: #10B981; color: white;" onclick="window.dispatchEvent(new CustomEvent('aprovarChamado', { detail: ${c.id} }))"><i class="fa-solid fa-thumbs-up"></i></button>`;
-    cornerButtons += `<button class="btn-icon" style="width: 32px; height: 32px; background: #EF4444; color: white;" onclick="window.dispatchEvent(new CustomEvent('rejeitarChamado', { detail: ${c.id} }))"><i class="fa-solid fa-thumbs-down"></i></button>`;
-  }
-  
+  const podeEditar  = (isMeu || nivel === 'MASTER_ADMIN') && c.status !== 'CONCLUIDO';
+
   // Para permitir cliques nos botões sem acionar o card
   useEffect(() => {
     const handleAssumir = (e) => { if (e.detail === c.id) onAssumir(c.id); };
-    const handleFechar = (e) => { if (e.detail === c.id) onFechar(c); };
+    const handleFechar  = (e) => { if (e.detail === c.id) onFechar(c); };
     const handleAprovar = (e) => { if (e.detail === c.id) onValidar(c.id, true); };
-    const handleRejeitar = (e) => { if (e.detail === c.id) onValidar(c.id, false); };
-    
+    const handleRejeitar= (e) => { if (e.detail === c.id) onValidar(c.id, false); };
+
     window.addEventListener('assumirChamado', handleAssumir);
-    window.addEventListener('fecharChamado', handleFechar);
+    window.addEventListener('fecharChamado',  handleFechar);
     window.addEventListener('aprovarChamado', handleAprovar);
-    window.addEventListener('rejeitarChamado', handleRejeitar);
-    
+    window.addEventListener('rejeitarChamado',handleRejeitar);
+
     return () => {
       window.removeEventListener('assumirChamado', handleAssumir);
-      window.removeEventListener('fecharChamado', handleFechar);
+      window.removeEventListener('fecharChamado',  handleFechar);
       window.removeEventListener('aprovarChamado', handleAprovar);
-      window.removeEventListener('rejeitarChamado', handleRejeitar);
+      window.removeEventListener('rejeitarChamado',handleRejeitar);
     };
   }, [c.id, onAssumir, onFechar, onValidar]);
-  
+
+  // Monta HTML dos botões do corner
+  let cornerButtons = '';
+
+  if (podeEditar) {
+    cornerButtons += `<button class="corner-btn" title="Editar" onclick="window.dispatchEvent(new CustomEvent('editarChamado', { detail: ${c.id} }))">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    </button>`;
+  }
+  if (podeAssumir) {
+    cornerButtons += `<button class="corner-btn btn-assume" title="Assumir Chamado" onclick="window.dispatchEvent(new CustomEvent('assumirChamado', { detail: ${c.id} }))">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+    </button>`;
+  }
+  if ((isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE') {
+    cornerButtons += `<button class="corner-btn btn-resolve" title="Finalizar Atendimento" onclick="window.dispatchEvent(new CustomEvent('fecharChamado', { detail: ${c.id} }))">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </button>`;
+  }
+  if (isMeu && c.status === 'AGUARDANDO VALIDACAO') {
+    cornerButtons += `<button class="corner-btn btn-approve" title="Aprovar resolução" onclick="window.dispatchEvent(new CustomEvent('aprovarChamado', { detail: ${c.id} }))">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+    </button>`;
+    cornerButtons += `<button class="corner-btn btn-reject" title="Recusar resolução" onclick="window.dispatchEvent(new CustomEvent('rejeitarChamado', { detail: ${c.id} }))">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
+    </button>`;
+  }
+
   return (
     <div className={`chamado-card ${slaClass}`}>
+      {/* Corner cutout com botões */}
       <div className="corner" dangerouslySetInnerHTML={{ __html: cornerButtons }} />
-      
+
+      {/* Header: ID + botão histórico */}
       <div className="ticket-header">
-        <div className="ticket-id">TICKET: {c.numero_chamado}</div>
-        <button className="btn-icon" style={{ width: '28px', height: '28px', fontSize: '0.7rem' }} onClick={() => onHistorico(c)}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
+        <div className="ticket-id">#{c.numero_chamado}</div>
+        <button
+          className="corner-btn"
+          style={{ marginRight: cornerButtons ? 4 : 0 }}
+          title="Histórico"
+          onClick={() => onHistorico(c)}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
           </svg>
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-        <Badge label={c.criticidade} color={CRIT_COLOR[c.criticidade]} />
-        <Badge label={`Compl. ${c.complexidade}`} color="#6B7280" />
-        <Badge label={STATUS_LABEL[c.status] || c.status} color={statusColor} />
+      {/* Badges de status */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+        <Badge label={c.criticidade}                       color={CRIT_COLOR[c.criticidade]} />
+        <Badge label={`Compl. ${c.complexidade}`}          color="#6B7280" />
+        <Badge label={STATUS_LABEL[c.status] || c.status}  color={statusColor} />
         {vencido && <Badge label="⚠ SLA" color="#EF4444" />}
       </div>
 
-      <div className="ticket-title">{c.descricao.length > 80 ? c.descricao.substring(0, 80) + '...' : c.descricao}</div>
+      {/* Título / descrição resumida */}
+      <div className="ticket-title">
+        {c.descricao.length > 85 ? c.descricao.substring(0, 85) + '…' : c.descricao}
+      </div>
 
+      {/* Footer */}
       <div className="ticket-footer">
         <div>
           <div><strong>Solicitante:</strong> {c.solicitante_nome?.split(' ')[0] || c.solicitante_nome}</div>
-          <div style={{ fontSize: '11px', color: 'var(--ink-faint)' }}>Aberto: {fmt(c.data_abertura)}</div>
+          <div style={{ fontSize: '11px', color: 'var(--ink-faint)', marginTop: 2 }}>Aberto: {fmt(c.data_abertura)}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div><strong>Responsável:</strong> {c.responsavel_nome?.split(' ')[0] || c.responsavel_nome || '—'}</div>
-          <div style={{ fontSize: '11px', color: vencido ? '#EF4444' : 'var(--ink-faint)' }}>SLA: {fmt(c.prazo_limite)}</div>
+          <div style={{ fontSize: '11px', color: vencido ? '#EF4444' : 'var(--ink-faint)', marginTop: 2, fontWeight: vencido ? 700 : 400 }}>
+            SLA: {fmt(c.prazo_limite)}
+          </div>
         </div>
       </div>
     </div>
@@ -1003,13 +1094,15 @@ function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
 
 // ── View: Novo Chamado (Estilo iMaida) ───────────────────────────────────────
 function NovoChamadoView({ user, api, onSucesso }) {
-  const [form, setForm] = useState({ descricao: '', criticidade: 'Média', complexidade: 'Média' });
+  const [form, setForm] = useState({ descricao: '', criticidade: '', complexidade: 'Média' });
   const [salvando, setSalvando] = useState(false);
 
   const submit = async e => {
-    e.preventDefault(); setSalvando(true);
+    e.preventDefault();
+    if (!form.criticidade) return;
+    setSalvando(true);
     const data = await api('/chamados', { method: 'POST', body: JSON.stringify(form) });
-    if (data?.id) { setForm({ descricao: '', criticidade: 'Média', complexidade: 'Média' }); onSucesso(); }
+    if (data?.id) { setForm({ descricao: '', criticidade: '', complexidade: 'Média' }); onSucesso(); }
     setSalvando(false);
   };
 
@@ -1074,10 +1167,10 @@ function NovoChamadoView({ user, api, onSucesso }) {
             </div>
           </div>
 
-          <SlaBox crit={form.criticidade} comp={form.complexidade} />
+          {form.criticidade && <SlaBox crit={form.criticidade} comp={form.complexidade} />}
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-primary" type="submit" disabled={salvando || !form.descricao}>
+            <button className="btn btn-primary" type="submit" disabled={salvando || !form.descricao || !form.criticidade}>
               {salvando ? 'Abrindo...' : 'Abrir Chamado'}
             </button>
           </div>
@@ -1112,7 +1205,11 @@ function ListaChamados({ titulo, chamados, userId, nivel, api, onRecarregar, reg
       </div>
       {chamados.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--ink-soft)' }}>
-          <div style={{ fontSize: '2rem', marginBottom: 10 }}>📭</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--ink-mute)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+            </svg>
+          </div>
           <p>Nenhum chamado encontrado.</p>
         </div>
       ) : (
@@ -1204,8 +1301,15 @@ function UsuarioModal({ usuario, onClose, onSalvar }) {
         </div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" disabled={salvando} onClick={submit}>{salvando ? 'Salvando…' : isEdicao ? '💾 Salvar' : '➕ Cadastrar'}</button>
+          <button className="btn btn-secondary" onClick={onClose}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Cancelar
+          </button>
+          <button className="btn btn-primary" disabled={salvando} onClick={submit}>
+            {salvando ? 'Salvando…' : isEdicao
+              ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar</>
+              : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Cadastrar</>}
+          </button>
         </div>
       </div>
     </Modal>
@@ -1248,10 +1352,18 @@ function UsuariosView({ api }) {
 
   return (
     <div>
-      {toast && <div className="card" style={{ position: 'fixed', bottom: 28, right: 28, zIndex: 2000, background: toast.tipo === 'err' ? '#FEF2F2' : '#F0FDF4', color: toast.tipo === 'err' ? '#991B1B' : '#166534' }}>{toast.tipo === 'err' ? '🗑' : '✅'} {toast.msg}</div>}
+      {toast && <div className="card" style={{ position: 'fixed', bottom: 28, right: 28, zIndex: 2000, display: 'flex', alignItems: 'center', gap: 8, background: toast.tipo === 'err' ? '#FEF2F2' : '#F0FDF4', color: toast.tipo === 'err' ? '#991B1B' : '#166534', borderLeft: `3px solid ${toast.tipo === 'err' ? '#EF4444' : '#10B981'}` }}>
+        {toast.tipo === 'err'
+          ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+        {toast.msg}
+      </div>}
       <div className="top-bar">
         <h1 className="page-title">Gerenciamento de Usuários</h1>
-        <button className="btn btn-primary" onClick={() => setModal('novo')}>➕ Novo Usuário</button>
+        <button className="btn btn-primary" onClick={() => setModal('novo')}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo Usuário
+        </button>
       </div>
 
       <div className="stat-grid">
@@ -1264,7 +1376,7 @@ function UsuariosView({ api }) {
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-        <input className="input-field" style={{ maxWidth: 280 }} placeholder="🔍 Buscar por nome ou e-mail…" value={busca} onChange={e => setBusca(e.target.value)} />
+        <input className="input-field" style={{ maxWidth: 280 }} placeholder="Buscar por nome ou e-mail…" value={busca} onChange={e => setBusca(e.target.value)} />
         <div style={{ display: 'flex', gap: 6 }}>
           {['TODOS', 'SOLICITANTE', 'TECNICO', 'MASTER_ADMIN'].map(n => {
             const meta = n === 'TODOS' ? { label: 'Todos', color: 'var(--ink)' } : NIVEL_META[n];
@@ -1291,13 +1403,21 @@ function UsuariosView({ api }) {
                     <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: nvMeta.color + '20', color: nvMeta.color }}>{nvMeta.label}</span></td>
                     <td style={{ padding: '12px 16px', color: 'var(--ink-soft)' }}>{u.cargo_nome || '—'}</td>
                     <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: u.ativo ? '#D1FAE5' : '#FEE2E2', color: u.ativo ? '#065F46' : '#991B1B' }}>{u.ativo ? 'Ativo' : 'Inativo'}</span></td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button className="btn-icon" style={{ width: 32, height: 32 }} onClick={() => setModal(u)}>✏️</button>
-                        <button className="btn-icon" style={{ width: 32, height: 32, color: u.ativo ? '#EF4444' : '#10B981' }} onClick={() => toggleAtivo(u)}>{u.ativo ? '⛔' : '✅'}</button>
-                        <button className="btn-icon" style={{ width: 32, height: 32, color: '#EF4444' }} onClick={() => setConfirmDel(u)}>🗑</button>
-                      </div>
-                    </td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button className="btn-icon" style={{ width: 32, height: 32 }} title="Editar" onClick={() => setModal(u)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          </button>
+                          <button className="btn-icon" style={{ width: 32, height: 32, color: u.ativo ? '#EF4444' : '#10B981' }} title={u.ativo ? 'Desativar' : 'Ativar'} onClick={() => toggleAtivo(u)}>
+                            {u.ativo
+                              ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                              : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                          </button>
+                          <button className="btn-icon" style={{ width: 32, height: 32, color: '#EF4444' }} title="Excluir" onClick={() => setConfirmDel(u)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                          </button>
+                        </div>
+                      </td>
                   </tr>
                 );
               })}
@@ -1313,7 +1433,10 @@ function UsuariosView({ api }) {
             <p>Tem certeza que deseja excluir <strong>{confirmDel.nome_completo}</strong>? Esta ação não pode ser desfeita.</p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
               <button className="btn-secondary" onClick={() => setConfirmDel(null)}>Cancelar</button>
-              <button className="btn-danger" onClick={() => excluir(confirmDel.id)}>🗑 Excluir</button>
+              <button className="btn btn-danger" onClick={() => excluir(confirmDel.id)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                Excluir
+              </button>
             </div>
           </div>
         </Modal>
@@ -1357,12 +1480,23 @@ function LogsVisualizacaoView({ api }) {
 
   return (
     <div>
-      {toast && <div className="card" style={{ position: 'fixed', bottom: 28, right: 28, zIndex: 2000, background: toast.tipo === 'err' ? '#FEF2F2' : '#F0FDF4', color: toast.tipo === 'err' ? '#991B1B' : '#166534' }}>{toast.tipo === 'err' ? '❌' : '✅'} {toast.msg}</div>}
+      {toast && <div className="card" style={{ position: 'fixed', bottom: 28, right: 28, zIndex: 2000, display: 'flex', alignItems: 'center', gap: 8, background: toast.tipo === 'err' ? '#FEF2F2' : '#F0FDF4', color: toast.tipo === 'err' ? '#991B1B' : '#166534', borderLeft: `3px solid ${toast.tipo === 'err' ? '#EF4444' : '#10B981'}` }}>
+        {toast.tipo === 'err'
+          ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+        {toast.msg}
+      </div>}
       <div className="top-bar">
         <h1 className="page-title">Logs de Visualização</h1>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn-secondary" onClick={() => setShowFilters(!showFilters)}>🔍 {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}</button>
-          <button className="btn-danger" onClick={() => setConfirmDelete({ type: 'all' })}>🗑 Limpar Todos</button>
+          <button className="btn btn-secondary" onClick={() => setShowFilters(!showFilters)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+            {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+          </button>
+          <button className="btn btn-danger" onClick={() => setConfirmDelete({ type: 'all' })}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            Limpar Todos
+          </button>
         </div>
       </div>
 
@@ -1404,8 +1538,12 @@ function LogsVisualizacaoView({ api }) {
                       <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: '#3B82F620', color: '#3B82F6' }}>{log.total_chamados_visiveis} chamados</span></td>
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn-icon" style={{ width: 32, height: 32, color: '#EF4444' }} onClick={() => setConfirmDelete({ type: 'single', id: log.id })}>🗑</button>
-                          <button className="btn-icon" style={{ width: 32, height: 32, color: '#F59E0B' }} onClick={() => setConfirmDelete({ type: 'user', usuarioId: log.id_usuario, nome: log.nome_completo })}>👤</button>
+                          <button className="btn-icon" style={{ width: 32, height: 32, color: '#EF4444' }} title="Excluir log" onClick={() => setConfirmDelete({ type: 'single', id: log.id })}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                          </button>
+                          <button className="btn-icon" style={{ width: 32, height: 32, color: '#F59E0B' }} title="Excluir logs do usuário" onClick={() => setConfirmDelete({ type: 'user', usuarioId: log.id_usuario, nome: log.nome_completo })}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                          </button>
                         </div>
                       </td>
                     </tr>
