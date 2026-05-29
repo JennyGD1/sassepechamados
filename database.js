@@ -150,4 +150,46 @@ export const db = {
     'DELETE FROM chamado_sassepe_usuarios WHERE id = $1',
     [id]
   ),
-};
+// ── Logs de Visualização de Bandeja ───────────────────────────────────────────
+  registrarVisualizacaoBandeja: (usuarioId, totalChamadosVisiveis) => pool.query(
+    `INSERT INTO chamado_sassepe_logs_visualizacao_bandeja (id_usuario, total_chamados_visiveis)
+     VALUES ($1, $2)
+     RETURNING *`,
+    [usuarioId, totalChamadosVisiveis]
+  ),
+
+  getUltimasVisualizacoesBandeja: (usuarioId, limit = 10) => pool.query(
+    `SELECT * FROM chamado_sassepe_logs_visualizacao_bandeja
+     WHERE id_usuario = $1
+     ORDER BY data_visualizacao DESC
+     LIMIT $2`,
+    [usuarioId, limit]
+  ),
+
+  // ── Edição de Perfil do Usuário ──────────────────────────────────────────────
+  updateUsuarioPerfil: (id, nome_completo, email) => pool.query(
+    `UPDATE chamado_sassepe_usuarios
+     SET nome_completo = $2,
+         email = $3
+     WHERE id = $1
+     RETURNING id, nome_completo, email, ativo`,
+    [id, nome_completo, email]
+  ),
+
+  updateUsuarioPerfilComSenha: (id, nome_completo, email, senha_hash) => pool.query(
+    `UPDATE chamado_sassepe_usuarios
+     SET nome_completo = $2,
+         email = $3,
+         senha_hash = $4
+     WHERE id = $1
+     RETURNING id, nome_completo, email, ativo`,
+    [id, nome_completo, email, senha_hash]
+  ),
+
+  // Verificar se email já existe (exceto o próprio usuário)
+  emailExistsExcludingUser: (email, userId) => pool.query(
+    `SELECT id FROM chamado_sassepe_usuarios 
+     WHERE email = $1 AND id != $2`,
+    [email, userId]
+  ),
+  };

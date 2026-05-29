@@ -337,7 +337,7 @@ const NIVEL_META = {
   MASTER_ADMIN: { label: 'Master Admin', color: '#8B5CF6' },
 };
 
-function Sidebar({ user, pagina, setPagina, onSair }) {
+function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
   const nivel = user?.nivel_acesso || 'SOLICITANTE';
   const meta  = NIVEL_META[nivel] || NIVEL_META.SOLICITANTE;
 
@@ -378,7 +378,18 @@ function Sidebar({ user, pagina, setPagina, onSair }) {
           <div>{user?.email}</div>
           <span className="nivel-badge" style={{ background: meta.color + '30', color: meta.color }}>{meta.label}</span>
         </div>
-        <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', color: 'rgba(255,255,255,.6)', borderColor: 'rgba(255,255,255,.15)', fontSize: '.8rem', padding: '8px' }} onClick={onSair}>Sair</button>
+        <button 
+          className="btn btn-ghost" 
+          style={{ width: '100%', justifyContent: 'center', color: 'rgba(255,255,255,.6)', borderColor: 'rgba(255,255,255,.15)', fontSize: '.8rem', padding: '8px', marginBottom: '8px' }} 
+          onClick={onAbrirPerfil}>
+          👤 Meu Perfil
+        </button>
+        <button 
+          className="btn btn-ghost" 
+          style={{ width: '100%', justifyContent: 'center', color: 'rgba(255,255,255,.6)', borderColor: 'rgba(255,255,255,.15)', fontSize: '.8rem', padding: '8px' }} 
+          onClick={onSair}>
+          Sair
+        </button>
       </div>
     </nav>
   );
@@ -470,9 +481,27 @@ function NovoChamadoView({ user, api, onSucesso }) {
 }
 
 // ── View: Lista de chamados genérica ─────────────────────────────────────────
-function ListaChamados({ titulo, chamados, userId, nivel, api, onRecarregar }) {
+function ListaChamados({ titulo, chamados, userId, nivel, api, onRecarregar, registrarVisualizacao = false }) {
   const [histModal,    setHistModal]    = useState(null);
   const [resolModal,   setResolModal]   = useState(null);
+
+  // Registrar visualização da bandeja quando apropriado
+  useEffect(() => {
+    if (registrarVisualizacao && chamados.length >= 0) {
+      const registrar = async () => {
+        try {
+          await api('/logs/visualizacao-bandeja', {
+            method: 'POST',
+            body: JSON.stringify({ totalChamadosVisiveis: chamados.length })
+          });
+        } catch (err) {
+          // Silenciosamente falha - não crítico
+          console.debug('Erro ao registrar visualização:', err);
+        }
+      };
+      registrar();
+    }
+  }, [registrarVisualizacao, chamados.length]);
 
   const assumir  = async id => { await api(`/chamados/${id}/assumir`, { method: 'PUT' }); onRecarregar(); };
   const fechar   = async (ch, txt) => { await api(`/chamados/${ch.id}/fechar`, { method: 'PUT', body: JSON.stringify({ descricaoResolucao: txt }) }); setResolModal(null); onRecarregar(); };
@@ -828,7 +857,270 @@ function DashboardView({ todos }) {
     </div>
   );
 }
+// ── Modal de Edição de Perfil ─────────────────────────────────────────────────
+function PerfilModal({ user, onClose, onPerfilAtualizado }) {
+  // Estado original para comparação
+  const [originalForm, setOriginalForm] = useState({
+    nome_completo: user?.nome || '',
+    email: user?.email || '',
+  });
+  
+  const [form, setForm] = useState({
+    nome_completo: user?.nome || '',
+    email: user?.email || '',
+    senha_atual: '',
+    nova_senha: '',
+    confirmar_nova_senha: ''
+  });
+  
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState('');
+  const [sucesso, setSucesso] = useState('');
+  const [alterandoSenha, setAlterandoSenha] = useState(false);
 
+  // Verificar se houve alguma alteração
+  const hasChanges = () => {
+    // Verificar se nome ou email mudaram
+    if (form.nome_completo !== originalForm.nome_completo) return true;
+    if (form.email !== originalForm.email) return true;
+    // Verificar se está tentando alterar senha
+    if (alterandoSenha && (form.nova_senha || form.confirmar_nova_senha)) return true;
+    return false;
+  };
+
+  // Verificar se o botão deve estar desabilitado
+  const isSubmitDisabled = () => {
+    if (salvando) return true;
+    if (!hasChanges()) return true;
+    
+    // Se está alterando senha, validar campos
+    if (alterandoSenha) {
+      if (!form.senha_atual) return true;
+      if (!form.nova_senha) return true;
+      if (form.nova_senha !== form.confirmar_nova_senha) return true;
+      if (form.nova_senha.length < 6) return true;
+    }
+    
+    return false;
+  };
+
+  const submit = async () => {
+    setErro('');
+    setSucesso('');
+    
+    if (!form.nome_completo.trim()) {
+      setErro('Nome é obrigatório.');
+      return;
+    }
+    if (!form.email.trim()) {
+      setErro('E-mail é obrigatório.');
+      return;
+    }
+    
+    if (alterandoSenha && form.nova_senha) {
+      if (form.nova_senha !== form.confirmar_nova_senha) {
+        setErro('As senhas não coincidem.');
+        return;
+      }
+      if (form.nova_senha.length < 6) {
+        setErro('A nova senha deve ter no mínimo 6 caracteres.');
+        return;
+      }
+      if (!form.senha_atual) {
+        setErro('Senha atual é necessária para alterar a senha.');
+        return;
+      }
+    }
+    
+    setSalvando(true);
+    
+    try {
+      const payload = {
+        nome_completo: form.nome_completo,
+        email: form.email
+      };
+      
+      if (alterandoSenha && form.nova_senha) {
+        payload.senha_atual = form.senha_atual;
+        payload.nova_senha = form.nova_senha;
+      }
+      
+      const token = localStorage.getItem('token');
+      const r = await fetch('/api/usuarios/perfil', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      const res = await r.json();
+      
+      if (r.ok) {
+        localStorage.setItem('token', res.token);
+        // Atualizar o estado original após salvar
+        setOriginalForm({
+          nome_completo: form.nome_completo,
+          email: form.email
+        });
+        setSucesso('Perfil atualizado com sucesso!');
+        setAlterandoSenha(false);
+        setForm({
+          ...form,
+          senha_atual: '',
+          nova_senha: '',
+          confirmar_nova_senha: ''
+        });
+        if (onPerfilAtualizado) {
+          onPerfilAtualizado(res.user);
+        }
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        setErro(res.error || 'Erro ao atualizar perfil.');
+      }
+    } catch (err) {
+      setErro('Erro de conexão. Tente novamente.');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <Modal onClose={onClose}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+        <div>
+          <div className="label" style={{ marginBottom: 4 }}>Editar Perfil</div>
+          <h2 style={{ fontSize: '1.25rem' }}>{user?.nome}</h2>
+        </div>
+        <button className="btn btn-ghost" style={{ padding: '5px 12px' }} onClick={onClose}>✕</button>
+      </div>
+
+      {erro && (
+        <div style={{ color: '#EF4444', fontSize: '.875rem', marginBottom: 16, padding: '10px 14px', background: '#FEF2F2', borderRadius: 8 }}>
+          {erro}
+        </div>
+      )}
+      
+      {sucesso && (
+        <div style={{ color: '#10B981', fontSize: '.875rem', marginBottom: 16, padding: '10px 14px', background: '#F0FDF4', borderRadius: 8 }}>
+          {sucesso}
+        </div>
+      )}
+
+      <div style={{ marginBottom: 18 }}>
+        <label className="label">Nome Completo *</label>
+        <input 
+          className="input-field" 
+          value={form.nome_completo} 
+          onChange={e => setForm({ ...form, nome_completo: e.target.value })}
+          placeholder="Seu nome completo"
+        />
+      </div>
+
+      <div style={{ marginBottom: 22 }}>
+        <label className="label">E-mail *</label>
+        <input 
+          className="input-field" 
+          type="email"
+          value={form.email} 
+          onChange={e => setForm({ ...form, email: e.target.value })}
+          placeholder="seu@email.com"
+        />
+      </div>
+
+      {/* Checkbox para ativar alteração de senha */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+          <input 
+            type="checkbox"
+            checked={alterandoSenha}
+            onChange={(e) => {
+              setAlterandoSenha(e.target.checked);
+              if (!e.target.checked) {
+                // Limpar campos de senha se desmarcar
+                setForm({
+                  ...form,
+                  senha_atual: '',
+                  nova_senha: '',
+                  confirmar_nova_senha: ''
+                });
+              }
+            }}
+            style={{ width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer' }}
+          />
+          <span style={{ fontSize: '.875rem', fontWeight: 500 }}>Alterar senha</span>
+        </label>
+      </div>
+
+      {/* Campos de senha - só aparecem se o checkbox estiver marcado */}
+      {alterandoSenha && (
+        <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0 16px', paddingTop: 16 }}>
+          <div style={{ marginBottom: 14 }}>
+            <label className="label">Senha Atual *</label>
+            <input 
+              className="input-field" 
+              type="password"
+              value={form.senha_atual} 
+              onChange={e => setForm({ ...form, senha_atual: e.target.value })}
+              placeholder="Digite sua senha atual"
+              autoComplete="current-password"
+            />
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label className="label">Nova Senha *</label>
+            <input 
+              className="input-field" 
+              type="password"
+              value={form.nova_senha} 
+              onChange={e => setForm({ ...form, nova_senha: e.target.value })}
+              placeholder="Mínimo 6 caracteres"
+              autoComplete="new-password"
+            />
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label className="label">Confirmar Nova Senha *</label>
+            <input 
+              className="input-field" 
+              type="password"
+              value={form.confirmar_nova_senha} 
+              onChange={e => setForm({ ...form, confirmar_nova_senha: e.target.value })}
+              placeholder="Confirme a nova senha"
+              autoComplete="new-password"
+            />
+          </div>
+
+          {form.nova_senha && form.confirmar_nova_senha && form.nova_senha !== form.confirmar_nova_senha && (
+            <div style={{ color: '#EF4444', fontSize: '.75rem', marginTop: -8, marginBottom: 8 }}>
+              ⚠️ As senhas não coincidem
+            </div>
+          )}
+          {form.nova_senha && form.nova_senha.length < 6 && (
+            <div style={{ color: '#EF4444', fontSize: '.75rem', marginTop: -8, marginBottom: 8 }}>
+              ⚠️ A senha deve ter no mínimo 6 caracteres
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+        <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
+        <button 
+          className="btn btn-dark" 
+          disabled={isSubmitDisabled()} 
+          onClick={submit}
+          style={{ opacity: isSubmitDisabled() ? 0.5 : 1, cursor: isSubmitDisabled() ? 'not-allowed' : 'pointer' }}
+        >
+          {salvando ? 'Salvando…' : '💾 Salvar Alterações'}
+        </button>
+      </div>
+    </Modal>
+  );
+}
 // ── App Principal ─────────────────────────────────────────────────────────────
 // Decodifica payload do JWT para restaurar sessão sem nova requisição ao servidor
 const decodeJwt = (tk) => {
@@ -856,6 +1148,7 @@ export default function App() {
   const [meusChamados, setMeusChamados] = useState([]);
   const [disponiveis,  setDisponiveis]  = useState([]);
   const [todos,        setTodos]        = useState([]);
+  const [showPerfilModal, setShowPerfilModal] = useState(false);
 
   const api = useCallback(async (endpoint, opts = {}) => {
     const r = await fetch(`/api${endpoint}`, {
@@ -894,6 +1187,10 @@ export default function App() {
 
   const nivel = user.nivel_acesso;
 
+  const handlePerfilAtualizado = (novoUsuario) => {
+    setUser(novoUsuario);
+    carregar();
+  };
   // Conteúdo da página ativa
   const renderPagina = () => {
     switch (pagina) {
@@ -904,7 +1201,15 @@ export default function App() {
         return <ListaChamados titulo="Meus Chamados" chamados={meusChamados} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} />;
 
       case 'bandeja':
-        return <ListaChamados titulo="Bandeja de Chamados" chamados={disponiveis.filter(c => !c.id_responsavel)} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} />;
+        return <ListaChamados 
+          titulo="Bandeja de Chamados" 
+          chamados={disponiveis.filter(c => !c.id_responsavel)} 
+          userId={user.id} 
+          nivel={nivel} 
+          api={api} 
+          onRecarregar={carregar}
+          registrarVisualizacao={true}  // Adicionar esta linha
+        />;
 
       case 'meus-atend':
         return <ListaChamados titulo="Meus Atendimentos" chamados={disponiveis.filter(c => `${c.id_responsavel}` === `${user.id}`)} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} />;
@@ -932,11 +1237,26 @@ export default function App() {
     <>
       <style>{G}</style>
       <div className="app-layout">
-        <Sidebar user={user} pagina={pagina} setPagina={setPagina} onSair={sair} />
+        <Sidebar 
+          user={user} 
+          pagina={pagina} 
+          setPagina={setPagina} 
+          onSair={sair}
+          onAbrirPerfil={() => setShowPerfilModal(true)}  // Adicionar
+        />
         <main className="main-content">
           {renderPagina()}
         </main>
       </div>
+      
+      {/* Modal de Perfil */}
+      {showPerfilModal && (
+        <PerfilModal 
+          user={user}
+          onClose={() => setShowPerfilModal(false)}
+          onPerfilAtualizado={handlePerfilAtualizado}
+        />
+      )}
     </>
   );
 }
