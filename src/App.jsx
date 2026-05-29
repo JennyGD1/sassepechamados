@@ -22,11 +22,11 @@ const STATUS_LABEL = { 'ABERTO': 'Aberto', 'EM ANALISE': 'Em Análise', 'AGUARDA
 const CRIT_COLOR   = { Alta: '#EF4444', Média: '#F59E0B', Baixa: '#10B981' };
 
 const calcPrazo = (crit, comp) => { const h = PRAZO_HORAS[crit][comp]; const d = new Date(); d.setHours(d.getHours() + h); return { horas: h, data: d }; };
+
 // ── Função para formatar data com timezone local ─────────────────────────────
 const formatLocalDate = (dateStr) => {
   if (!dateStr) return '—';
   const date = new Date(dateStr);
-  // Se a data veio do banco já no timezone correto, apenas formatar
   return date.toLocaleString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -36,8 +36,8 @@ const formatLocalDate = (dateStr) => {
   });
 };
 
-// Substituir a função fmt existente por:
 const fmt = d => d ? formatLocalDate(d) : '—';
+
 // ── CSS global ────────────────────────────────────────────────────────────────
 const G = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
@@ -93,7 +93,6 @@ const G = `
   .crit-card.selected { background: var(--surface); box-shadow: var(--shadow); }
   .crit-card:hover { transform: translateY(-1px); }
 
-  /* Balão de criticidade inline */
   .crit-balloon { border-radius: var(--radius); padding: 14px 16px; margin-top: 12px; border-left: 4px solid; animation: slideUp .2s ease; }
 
   .sla-box { background: linear-gradient(135deg, #1A1714 0%, #2d2926 100%); color: #fff; border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: center; gap: 16px; }
@@ -102,7 +101,6 @@ const G = `
   .tab-btn.active { background: var(--ink); color: #fff; }
   .tab-btn:hover:not(.active) { background: var(--border); color: var(--text); }
 
-  /* Sidebar layout */
   .app-layout { display: flex; min-height: 100vh; }
   .sidebar { width: 240px; flex-shrink: 0; background: var(--ink); color: #fff; display: flex; flex-direction: column; padding: 28px 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
   .sidebar-logo { padding: 0 24px 28px; border-bottom: 1px solid rgba(255,255,255,.1); margin-bottom: 16px; }
@@ -116,10 +114,8 @@ const G = `
   .sidebar-user { font-size: .8rem; opacity: .7; margin-bottom: 10px; line-height: 1.4; }
   .main-content { margin-left: 240px; flex: 1; padding: 32px; max-width: calc(100vw - 240px); }
 
-  /* Nivel badge na sidebar */
   .nivel-badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
 
-  /* Stat cards (admin) */
   .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
   .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
   .stat-num  { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; line-height: 1; }
@@ -158,7 +154,6 @@ function SlaBox({ crit, comp }) {
   );
 }
 
-// ── Balão de criticidade (inline, abaixo da seleção) ─────────────────────────
 function CriticidadeBalloon({ crit }) {
   if (!crit) return null;
   const info  = CRITICIDADE_INFO[crit];
@@ -174,7 +169,7 @@ function CriticidadeBalloon({ crit }) {
   );
 }
 
-// ── Histórico ─────────────────────────────────────────────────────────────────
+// ── Histórico e Modais Auxiliares ─────────────────────────────────────────────
 const ACAO_META = {
   ABERTURA:   { icon: '🟢', label: 'Abertura',   color: '#10B981' },
   ATRIBUICAO: { icon: '🔵', label: 'Atribuição', color: '#3B82F6' },
@@ -194,7 +189,8 @@ function HistoricoModal({ chamado, onClose, api }) {
       }
       setLoading(false);
     });
-  }, []);
+  }, [api, chamado.id]);
+  
   return (
     <Modal onClose={onClose}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
@@ -227,7 +223,6 @@ function HistoricoModal({ chamado, onClose, api }) {
   );
 }
 
-// ── Modal Resolução ───────────────────────────────────────────────────────────
 function ResolucaoModal({ chamado, onClose, onConfirm }) {
   const [texto, setTexto] = useState('');
   return (
@@ -249,7 +244,7 @@ function ResolucaoModal({ chamado, onClose, onConfirm }) {
   );
 }
 
-// ── Card de Chamado ───────────────────────────────────────────────────────────
+// ── Card de Chamado (Funcionalidade App.jsx + Estética Estética.jsx) ──────────
 function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHistorico }) {
   const isMeu       = `${c.id_solicitante}` === `${userId}`;
   const isResp      = `${c.id_responsavel}` === `${userId}`;
@@ -257,44 +252,78 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
   const podeAssumir = !c.id_responsavel && !isMeu && (nivel === 'TECNICO' || nivel === 'MASTER_ADMIN');
 
   return (
-    <div className="chamado-card" style={{ borderLeft: `4px solid ${STATUS_COLOR[c.status] || '#ccc'}` }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-        <div>
-          <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: '.8rem', color: 'var(--accent2)', marginBottom: 5 }}>{c.numero_chamado}</div>
-          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-            <Badge label={c.criticidade} color={CRIT_COLOR[c.criticidade]} />
-            <Badge label={`Compl. ${c.complexidade}`} color="#6B7280" />
-            <Badge label={STATUS_LABEL[c.status] || c.status} color={STATUS_COLOR[c.status] || '#888'} />
-            {vencido && <Badge label="⚠ SLA Vencido" color="#EF4444" />}
-          </div>
+    <div className="chamado-card" style={{ borderLeft: `4px solid ${STATUS_COLOR[c.status] || '#ccc'}`, padding: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 8,
+          background: '#5b6eab',
+          padding: '3px 10px 3px 8px',
+          borderRadius: '6px'
+        }}>
+          <span style={{ fontSize: '.65rem', fontWeight: 600, color: '#ffffff', letterSpacing: '0.5px' }}>
+            TICKET:
+          </span>
+          <span style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: '.85rem', color: '#ffffff' }}>
+            {c.numero_chamado}
+          </span>
         </div>
-        <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: '.75rem', flexShrink: 0 }} onClick={() => onHistorico(c)}>📋 Histórico</button>
+        
+        <button 
+            className="btn btn-ghost" 
+            style={{ 
+              padding: '2px 8px', 
+              fontSize: '.7rem', 
+              height: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }} 
+            onClick={() => onHistorico(c)}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            Histórico
+          </button>
       </div>
 
-      <div style={{ fontSize: '.875rem', marginBottom: 12, lineHeight: 1.5, color: 'var(--text)' }}>{c.descricao}</div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: '.8rem', color: 'var(--muted)', marginBottom: 14 }}>
-        <div><strong style={{ color: 'var(--text)', display: 'block', marginBottom: 1 }}>Solicitante</strong>{c.solicitante_nome}</div>
-        <div><strong style={{ color: 'var(--text)', display: 'block', marginBottom: 1 }}>Responsável</strong>{c.responsavel_nome || <em>Não assumido</em>}</div>
-        <div><strong style={{ color: 'var(--text)', display: 'block', marginBottom: 1 }}>Abertura</strong>{fmt(c.data_abertura)}</div>
-        <div>
-          <strong style={{ color: vencido ? '#EF4444' : 'var(--text)', display: 'block', marginBottom: 1 }}>SLA Limite</strong>
-          <span style={{ color: vencido ? '#EF4444' : 'inherit', fontWeight: vencido ? 700 : 400 }}>{fmt(c.prazo_limite)}</span>
-        </div>
-        {c.data_fechamento && <div><strong style={{ color: 'var(--text)', display: 'block', marginBottom: 1 }}>Fechamento</strong>{fmt(c.data_fechamento)}</div>}
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+        <Badge label={c.criticidade} color={CRIT_COLOR[c.criticidade]} />
+        <Badge label={`Compl. ${c.complexidade}`} color="#6B7280" />
+        <Badge label={STATUS_LABEL[c.status] || c.status} color={STATUS_COLOR[c.status] || '#888'} />
+        {vencido && <Badge label="⚠ SLA" color="#EF4444" />}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ fontSize: '.8rem', marginBottom: 8, lineHeight: 1.4, color: 'var(--text)' }}>
+        {c.descricao.length > 100 ? c.descricao.substring(0, 100) + '...' : c.descricao}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: '.7rem', color: 'var(--muted)', marginBottom: 10 }}>
+        <div><strong style={{ color: 'var(--text)' }}>Solicitante</strong><br/>{c.solicitante_nome?.split(' ')[0] || c.solicitante_nome}</div>
+        <div><strong style={{ color: 'var(--text)' }}>Responsável</strong><br/>{c.responsavel_nome?.split(' ')[0] || c.responsavel_nome || '—'}</div>
+        <div><strong style={{ color: 'var(--text)' }}>Abertura</strong><br/>{fmt(c.data_abertura)}</div>
+        <div><strong style={{ color: vencido ? '#EF4444' : 'var(--text)' }}>SLA</strong><br/>{fmt(c.prazo_limite)}</div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {podeAssumir && (
-          <button className="btn btn-blue" onClick={() => onAssumir(c.id)}>🎯 Assumir</button>
+          <button className="btn btn-blue" style={{ fontSize: '.7rem', padding: '4px 10px' }} onClick={() => onAssumir(c.id)}>
+            Assumir
+          </button>
         )}
         {(isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE' && (
-          <button className="btn btn-dark" onClick={() => onFechar(c)}>✅ Finalizar Atendimento</button>
+          <button className="btn btn-dark" style={{ fontSize: '.7rem', padding: '4px 10px' }} onClick={() => onFechar(c)}>
+            Finalizar
+          </button>
         )}
+        {/* Usando onValidar de App.jsx integrado aos botões visualmente atualizados */}
         {isMeu && c.status === 'AGUARDANDO VALIDACAO' && (
           <>
-            <button className="btn btn-green" onClick={() => onValidar(c.id, true)}>✓ Aprovar Resolução</button>
-            <button className="btn btn-red"   onClick={() => onValidar(c.id, false)}>✗ Recusar / Reabrir</button>
+            <button className="btn btn-green" style={{ fontSize: '.7rem', padding: '4px 10px' }} onClick={() => onValidar(c.id, true)}>✓ Aprovar Resolução</button>
+            <button className="btn btn-red"   style={{ fontSize: '.7rem', padding: '4px 10px' }} onClick={() => onValidar(c.id, false)}>✗ Recusar / Reabrir</button>
           </>
         )}
       </div>
@@ -350,7 +379,7 @@ function LoginScreen({ onLogin }) {
   );
 }
 
-// ── Sidebar ───────────────────────────────────────────────────────────────────
+// ── Sidebar (Rotas App.jsx + Ícones SVGs Estética.jsx) ────────────────────────
 const NIVEL_META = {
   SOLICITANTE:  { label: 'Solicitante',  color: '#F59E0B' },
   TECNICO:      { label: 'Técnico',      color: '#3B82F6' },
@@ -361,24 +390,27 @@ function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
   const nivel = user?.nivel_acesso || 'SOLICITANTE';
   const meta  = NIVEL_META[nivel] || NIVEL_META.SOLICITANTE;
 
+  // Utilizamos as rotas mantidas em App.jsx combinadas com os ícones de Estética.jsx
   const navSolicitante = [
-    { id: 'dashboard',      icon: '📊', label: 'Dashboard' },
-    { id: 'meus-chamados',  icon: '📋', label: 'Meus Chamados' },
-    { id: 'novo-chamado',   icon: '➕', label: 'Abrir Chamado' },
+    { id: 'dashboard',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, label: 'Dashboard' },
+    { id: 'meus-chamados',  icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>, label: 'Meus Chamados' },
+    { id: 'novo-chamado',   icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>, label: 'Abrir Chamado' },
   ];
+
   const navTecnico = [
-    { id: 'dashboard',      icon: '📊', label: 'Dashboard' },
-    { id: 'bandeja',        icon: '📥', label: 'Bandeja de Chamados' },
-    { id: 'meus-atend',     icon: '⚡', label: 'Meus Atendimentos' },
+    { id: 'dashboard',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, label: 'Dashboard' },
+    { id: 'bandeja',        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>, label: 'Bandeja de Chamados' },
+    { id: 'meus-atend',     icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h8l-2 8 10-12h-8z"/></svg>, label: 'Meus Atendimentos' },
   ];
+
   const navAdmin = [
-    { id: 'dashboard',      icon: '📊', label: 'Dashboard' },
-    { id: 'todos-chamados', icon: '🗂',  label: 'Todos os Chamados' },
-    { id: 'meus-chamados',  icon: '📋', label: 'Meus Chamados' },
-    { id: 'novo-chamado',   icon: '➕', label: 'Abrir Chamado' },
-    { id: 'bandeja',        icon: '📥', label: 'Bandeja' },
-    { id: 'usuarios',       icon: '👥', label: 'Usuários' },
-    { id: 'logs-visualizacao', icon: '📊', label: 'Logs de Visualização' },
+    { id: 'dashboard',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, label: 'Dashboard' },
+    { id: 'todos-chamados', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>, label: 'Todos os Chamados' },
+    { id: 'meus-chamados',  icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>, label: 'Meus Chamados' },
+    { id: 'novo-chamado',   icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>, label: 'Abrir Chamado' },
+    { id: 'bandeja',        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>, label: 'Bandeja' },
+    { id: 'usuarios',       icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, label: 'Usuários' },
+    { id: 'logs-visualizacao', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>, label: 'Logs de Visualização' },
   ];
 
   const items = nivel === 'MASTER_ADMIN' ? navAdmin : nivel === 'TECNICO' ? navTecnico : navSolicitante;
@@ -402,11 +434,26 @@ function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
           <span className="nivel-badge" style={{ background: meta.color + '30', color: meta.color }}>{meta.label}</span>
         </div>
         <button 
-          className="btn btn-ghost" 
-          style={{ width: '100%', justifyContent: 'center', color: 'rgba(255,255,255,.6)', borderColor: 'rgba(255,255,255,.15)', fontSize: '.8rem', padding: '8px', marginBottom: '8px' }} 
-          onClick={onAbrirPerfil}>
-          👤 Meu Perfil
-        </button>
+            className="btn btn-ghost" 
+            style={{ 
+              width: '100%', 
+              justifyContent: 'center', 
+              color: 'rgba(255,255,255,.6)', 
+              borderColor: 'rgba(255,255,255,.15)', 
+              fontSize: '.8rem', 
+              padding: '8px', 
+              marginBottom: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }} 
+            onClick={onAbrirPerfil}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            Meu Perfil
+          </button>
         <button 
           className="btn btn-ghost" 
           style={{ width: '100%', justifyContent: 'center', color: 'rgba(255,255,255,.6)', borderColor: 'rgba(255,255,255,.15)', fontSize: '.8rem', padding: '8px' }} 
@@ -418,8 +465,9 @@ function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
   );
 }
 
-// ── View: Novo Chamado (formulário completo) ──────────────────────────────────
+// ── View: Novo Chamado (Funcionalidade App.jsx + Estética Estética.jsx) ───────
 function NovoChamadoView({ user, api, onSucesso }) {
+  // Mantemos o estado padronizado e a lógica de envio do App.jsx original
   const [form, setForm]     = useState({ descricao: '', criticidade: 'Média', complexidade: 'Média' });
   const [salvando, setSalvando] = useState(false);
 
@@ -430,6 +478,14 @@ function NovoChamadoView({ user, api, onSucesso }) {
     setSalvando(false);
   };
 
+  const LevelIcon = ({ color }) => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+  );
+
   return (
     <div>
       <h2 style={{ marginBottom: 6, fontSize: '1.25rem' }}>Abrir Novo Chamado</h2>
@@ -437,7 +493,6 @@ function NovoChamadoView({ user, api, onSucesso }) {
 
       <div className="card" style={{ maxWidth: 680 }}>
         <form onSubmit={submit}>
-          {/* Campos bloqueados */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22, opacity: .6, pointerEvents: 'none' }}>
             <div>
               <label className="label">Responsável pela Abertura</label>
@@ -456,46 +511,80 @@ function NovoChamadoView({ user, api, onSucesso }) {
               placeholder="Descreva o problema com detalhes suficientes para diagnóstico…" style={{ resize: 'vertical' }} />
           </div>
 
-          {/* Criticidade com balão inline */}
           <div style={{ marginBottom: 22 }}>
-            <label className="label">Grau de Criticidade</label>
+            <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+              </svg>
+              Grau de Criticidade *
+            </label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
-              {['Alta','Média','Baixa'].map(c => (
-                <div key={c} className={`crit-card${form.criticidade === c ? ' selected' : ''}`}
-                  style={{ borderColor: form.criticidade === c ? CRIT_COLOR[c] : 'transparent' }}
-                  onClick={() => setForm({ ...form, criticidade: c })}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                    <span style={{ width: 9, height: 9, borderRadius: '50%', background: CRIT_COLOR[c], display: 'inline-block', flexShrink: 0 }} />
-                    <strong style={{ fontFamily: 'Syne', fontSize: '.9rem' }}>{c}</strong>
+              {['Alta', 'Média', 'Baixa'].map(c => {
+                const descMap = { Alta: 'Sistema fora do ar', Média: 'Falhas parciais', Baixa: 'Baixo impacto' };
+                const isSel = form.criticidade === c;
+                return (
+                  <div key={c} className={`crit-card${isSel ? ' selected' : ''}`}
+                    style={{ borderColor: isSel ? CRIT_COLOR[c] : 'transparent', background: isSel ? CRIT_COLOR[c] + '12' : 'var(--bg)', cursor: 'pointer' }}
+                    onClick={() => setForm({ ...form, criticidade: c })}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                      <span style={{ width: 9, height: 9, borderRadius: '50%', background: CRIT_COLOR[c], display: 'inline-block', flexShrink: 0 }} />
+                      <strong style={{ fontFamily: 'Syne', fontSize: '.9rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <LevelIcon color={CRIT_COLOR[c]} />
+                        {c}
+                      </strong>
+                    </div>
+                    <div style={{ fontSize: '.7rem', color: 'var(--muted)', marginTop: 4 }}>{descMap[c]}</div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-            {/* ← Balão aparece aqui, abaixo dos cards */}
             <CriticidadeBalloon crit={form.criticidade} />
           </div>
 
-          {/* Complexidade */}
-          <div style={{ marginBottom: 22 }}>
-            <label className="label">Grau de Complexidade</label>
+          <div style={{ marginBottom: 22, animation: 'slideUp .2s ease' }}>
+            <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+              </svg>
+              Grau de Complexidade *
+            </label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
-              {['Alta','Média','Baixa'].map(cp => (
-                <div key={cp} className={`crit-card${form.complexidade === cp ? ' selected' : ''}`}
-                  style={{ borderColor: form.complexidade === cp ? 'var(--accent2)' : 'transparent', textAlign: 'center' }}
-                  onClick={() => setForm({ ...form, complexidade: cp })}>
-                  <strong style={{ fontFamily: 'Syne', fontSize: '.9rem' }}>{cp}</strong>
-                  <div style={{ fontSize: '.75rem', color: 'var(--muted)', marginTop: 3 }}>{PRAZO_HORAS[form.criticidade][cp]}h de SLA</div>
-                </div>
-              ))}
+              {['Alta', 'Média', 'Baixa'].map(cp => {
+                const descMap = { Alta: 'Solução complexa', Média: 'Solução moderada', Baixa: 'Solução simples' };
+                const cColorMap = { Alta: '#EF4444', Média: '#F59E0B', Baixa: '#10B981' };
+                const isSel = form.complexidade === cp;
+                return (
+                  <div key={cp} className={`crit-card${isSel ? ' selected' : ''}`}
+                    style={{ borderColor: isSel ? 'var(--accent2)' : 'transparent', textAlign: 'center', background: isSel ? 'var(--accent2)12' : 'var(--bg)', cursor: 'pointer' }}
+                    onClick={() => setForm({ ...form, complexidade: cp })}>
+                    <strong style={{ fontFamily: 'Syne', fontSize: '.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      <LevelIcon color={cColorMap[cp]} />
+                      {cp}
+                    </strong>
+                    <div style={{ fontSize: '.7rem', color: 'var(--muted)', marginTop: 4 }}>{descMap[cp]}</div>
+                    <div style={{ fontSize: '.7rem', color: '#8B5CF6', marginTop: 4, fontWeight: 600 }}>
+                      {PRAZO_HORAS[form.criticidade][cp]}h de SLA
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          <div style={{ marginBottom: 24 }}>
+          <div style={{ marginBottom: 24, animation: 'slideUp .2s ease' }}>
             <SlaBox crit={form.criticidade} comp={form.complexidade} />
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-accent" type="submit" disabled={salvando}>{salvando ? 'Abrindo…' : 'Abrir Chamado'}</button>
+            <button className="btn btn-accent" type="submit" disabled={salvando || !form.descricao} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 2L11 13"></path>
+                <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+              </svg>
+              {salvando ? 'Abrindo...' : 'Abrir Chamado'}
+            </button>
           </div>
         </form>
       </div>
@@ -508,7 +597,6 @@ function ListaChamados({ titulo, chamados, userId, nivel, api, onRecarregar, reg
   const [histModal,    setHistModal]    = useState(null);
   const [resolModal,   setResolModal]   = useState(null);
 
-  // Registrar visualização da bandeja quando apropriado
   useEffect(() => {
     if (registrarVisualizacao && chamados.length >= 0) {
       const registrar = async () => {
@@ -518,13 +606,12 @@ function ListaChamados({ titulo, chamados, userId, nivel, api, onRecarregar, reg
             body: JSON.stringify({ totalChamadosVisiveis: chamados.length })
           });
         } catch (err) {
-          // Silenciosamente falha - não crítico
           console.debug('Erro ao registrar visualização:', err);
         }
       };
       registrar();
     }
-  }, [registrarVisualizacao, chamados.length]);
+  }, [registrarVisualizacao, chamados.length, api]);
 
   const assumir  = async id => { await api(`/chamados/${id}/assumir`, { method: 'PUT' }); onRecarregar(); };
   const fechar   = async (ch, txt) => { await api(`/chamados/${ch.id}/fechar`, { method: 'PUT', body: JSON.stringify({ descricaoResolucao: txt }) }); setResolModal(null); onRecarregar(); };
@@ -650,7 +737,7 @@ function UsuarioModal({ usuario, onClose, onSalvar }) {
 function UsuariosView({ api }) {
   const [usuarios, setUsuarios]     = useState([]);
   const [loading, setLoading]       = useState(true);
-  const [modal, setModal]           = useState(null); // null | 'novo' | usuario obj
+  const [modal, setModal]           = useState(null); 
   const [busca, setBusca]           = useState('');
   const [filtroNivel, setFiltroNivel] = useState('TODOS');
   const [confirmDel, setConfirmDel] = useState(null);
@@ -706,7 +793,6 @@ function UsuariosView({ api }) {
 
   return (
     <div>
-      {/* Toast */}
       {toast && (
         <div style={{
           position: 'fixed', bottom: 28, right: 28, zIndex: 2000,
@@ -720,7 +806,6 @@ function UsuariosView({ api }) {
         </div>
       )}
 
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: '1.25rem', marginBottom: 4 }}>Gerenciamento de Usuários</h2>
@@ -729,7 +814,6 @@ function UsuariosView({ api }) {
         <button className="btn btn-dark" onClick={() => setModal('novo')}>➕ Novo Usuário</button>
       </div>
 
-      {/* Stats rápidos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
         {[
           { num: counts.total,    lbl: 'Total',    color: 'var(--text)' },
@@ -743,7 +827,6 @@ function UsuariosView({ api }) {
         ))}
       </div>
 
-      {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <input className="input-field" style={{ maxWidth: 280 }} placeholder="🔍  Buscar por nome ou e-mail…"
           value={busca} onChange={e => setBusca(e.target.value)} />
@@ -760,7 +843,6 @@ function UsuariosView({ api }) {
         </div>
       </div>
 
-      {/* Tabela */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>Carregando…</div>
       ) : listagem.length === 0 ? (
@@ -770,7 +852,6 @@ function UsuariosView({ api }) {
         </div>
       ) : (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
-          {/* Header da tabela */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1.2fr 1fr .8fr 1.1fr', gap: 12, padding: '12px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
             {['Nome', 'E-mail', 'Nível', 'Cargo', 'Status', 'Ações'].map((h, i) => (
               <div key={i} style={{ fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', fontFamily: 'Syne' }}>{h}</div>
@@ -814,7 +895,6 @@ function UsuariosView({ api }) {
         </div>
       )}
 
-      {/* Modal criar/editar */}
       {modal && (
         <UsuarioModal
           usuario={modal === 'novo' ? null : modal}
@@ -823,7 +903,6 @@ function UsuariosView({ api }) {
         />
       )}
 
-      {/* Modal confirmação exclusão */}
       {confirmDel && (
         <Modal onClose={() => setConfirmDel(null)}>
           <h2 style={{ marginBottom: 8 }}>Excluir Usuário</h2>
@@ -963,7 +1042,6 @@ function LogsVisualizacaoView({ api }) {
 
   return (
     <div>
-      {/* Toast */}
       {toast && (
         <div style={{
           position: 'fixed', bottom: 28, right: 28, zIndex: 2000,
@@ -977,7 +1055,6 @@ function LogsVisualizacaoView({ api }) {
         </div>
       )}
 
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
           <h2 style={{ fontSize: '1.25rem', marginBottom: 4 }}>Logs de Visualização da Bandeja</h2>
@@ -998,7 +1075,6 @@ function LogsVisualizacaoView({ api }) {
         </div>
       </div>
 
-      {/* Filtros */}
       {showFilters && (
         <div className="card" style={{ marginBottom: 24, padding: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
@@ -1033,7 +1109,6 @@ function LogsVisualizacaoView({ api }) {
         </div>
       )}
 
-      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 24 }}>
         {[
           { num: total, lbl: 'Total de Visualizações', color: 'var(--text)' },
@@ -1047,7 +1122,6 @@ function LogsVisualizacaoView({ api }) {
         ))}
       </div>
 
-      {/* Tabela */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
           Carregando logs...
@@ -1126,7 +1200,6 @@ function LogsVisualizacaoView({ api }) {
             })}
           </div>
 
-          {/* Paginação */}
           {totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 24 }}>
               <button
@@ -1151,7 +1224,6 @@ function LogsVisualizacaoView({ api }) {
         </>
       )}
 
-      {/* Modal de Confirmação */}
       {confirmDelete && (
         <Modal onClose={() => setConfirmDelete(null)}>
           <h2 style={{ marginBottom: 8 }}>
@@ -1183,7 +1255,7 @@ function LogsVisualizacaoView({ api }) {
   );
 }
 
-// ── View: Dashboard (todos os usuários) ─────────────────────────────────────
+// ── View: Dashboard (Funcionalidade App.jsx intacta) ─────────────────────────
 const MESES = [
   'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'
@@ -1228,10 +1300,8 @@ function DashboardView({ api, user }) {
     baixa:     chamados.filter(c => c.criticidade === 'Baixa').length,
   };
 
-  // Taxa de conclusão
   const taxaConclusao = counts.total > 0 ? Math.round((counts.concluido / counts.total) * 100) : 0;
 
-  // SLA médio em horas (só concluídos)
   const concluidos = chamados.filter(c => c.status === 'CONCLUIDO' && c.data_abertura && c.data_fechamento);
   const slaMediaHoras = concluidos.length > 0
     ? Math.round(concluidos.reduce((acc, c) => acc + (new Date(c.data_fechamento) - new Date(c.data_abertura)) / 3_600_000, 0) / concluidos.length)
@@ -1266,7 +1336,7 @@ function DashboardView({ api, user }) {
       (c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO') ? 'Sim' : 'Não'
     ]);
     const csv = [cabecalho.join(';'), ...linhas.map(l => l.join(';'))].join('\n');
-    const bom = '\uFEFF'; // BOM para UTF-8 no Excel
+    const bom = '\uFEFF'; 
     const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1291,14 +1361,12 @@ function DashboardView({ api, user }) {
 
   return (
     <div>
-      {/* Header com título, filtro de competência e botão CSV */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h2 style={{ fontSize: '1.25rem', marginBottom: 4 }}>Dashboard</h2>
           <p style={{ color: 'var(--muted)', fontSize: '.875rem' }}>Visão geral dos chamados por competência</p>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* Seletor de competência */}
           <div style={{ position: 'relative' }}>
             <button
               className="btn btn-ghost"
@@ -1334,7 +1402,6 @@ function DashboardView({ api, user }) {
               </div>
             )}
           </div>
-          {/* Botão de download CSV */}
           <button
             className="btn btn-green"
             style={{ fontSize: '.875rem' }}
@@ -1351,7 +1418,6 @@ function DashboardView({ api, user }) {
         <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>Carregando…</div>
       ) : (
         <>
-          {/* Alerta SLA */}
           {counts.vencidos > 0 && (
             <div style={{ padding: '14px 18px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 'var(--radius)', marginBottom: 20, fontSize: '.875rem', color: '#991B1B' }}>
               ⚠️ <strong>{counts.vencidos} chamado(s)</strong> com SLA vencido requerem atenção imediata.
@@ -1366,7 +1432,6 @@ function DashboardView({ api, user }) {
 
           {counts.total > 0 && (
             <>
-              {/* Cards de status */}
               <div className="stat-grid" style={{ marginBottom: 20 }}>
                 {stats.map((s, i) => (
                   <div key={i} className="stat-card">
@@ -1376,7 +1441,6 @@ function DashboardView({ api, user }) {
                 ))}
               </div>
 
-              {/* Segunda linha de indicadores */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16, marginBottom: 28 }}>
                 <div className="stat-card">
                   <div className="stat-num" style={{ color: '#10B981', fontSize: '1.8rem' }}>{taxaConclusao}%</div>
@@ -1402,7 +1466,6 @@ function DashboardView({ api, user }) {
                 )}
               </div>
 
-              {/* Barra de distribuição de status */}
               <div className="card" style={{ marginBottom: 24 }}>
                 <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: '.875rem', marginBottom: 16 }}>Distribuição por Status</div>
                 <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', height: 28, gap: 2 }}>
@@ -1436,7 +1499,6 @@ function DashboardView({ api, user }) {
                 </div>
               </div>
 
-              {/* Tabela resumida dos chamados */}
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: '.875rem' }}>
@@ -1491,9 +1553,9 @@ function DashboardView({ api, user }) {
     </div>
   );
 }
+
 // ── Modal de Edição de Perfil ─────────────────────────────────────────────────
 function PerfilModal({ user, onClose, onPerfilAtualizado }) {
-  // Estado original para comparação
   const [originalForm, setOriginalForm] = useState({
     nome_completo: user?.nome || '',
     email: user?.email || '',
@@ -1512,29 +1574,22 @@ function PerfilModal({ user, onClose, onPerfilAtualizado }) {
   const [sucesso, setSucesso] = useState('');
   const [alterandoSenha, setAlterandoSenha] = useState(false);
 
-  // Verificar se houve alguma alteração
   const hasChanges = () => {
-    // Verificar se nome ou email mudaram
     if (form.nome_completo !== originalForm.nome_completo) return true;
     if (form.email !== originalForm.email) return true;
-    // Verificar se está tentando alterar senha
     if (alterandoSenha && (form.nova_senha || form.confirmar_nova_senha)) return true;
     return false;
   };
 
-  // Verificar se o botão deve estar desabilitado
   const isSubmitDisabled = () => {
     if (salvando) return true;
     if (!hasChanges()) return true;
-    
-    // Se está alterando senha, validar campos
     if (alterandoSenha) {
       if (!form.senha_atual) return true;
       if (!form.nova_senha) return true;
       if (form.nova_senha !== form.confirmar_nova_senha) return true;
       if (form.nova_senha.length < 6) return true;
     }
-    
     return false;
   };
 
@@ -1542,38 +1597,19 @@ function PerfilModal({ user, onClose, onPerfilAtualizado }) {
     setErro('');
     setSucesso('');
     
-    if (!form.nome_completo.trim()) {
-      setErro('Nome é obrigatório.');
-      return;
-    }
-    if (!form.email.trim()) {
-      setErro('E-mail é obrigatório.');
-      return;
-    }
+    if (!form.nome_completo.trim()) { setErro('Nome é obrigatório.'); return; }
+    if (!form.email.trim()) { setErro('E-mail é obrigatório.'); return; }
     
     if (alterandoSenha && form.nova_senha) {
-      if (form.nova_senha !== form.confirmar_nova_senha) {
-        setErro('As senhas não coincidem.');
-        return;
-      }
-      if (form.nova_senha.length < 6) {
-        setErro('A nova senha deve ter no mínimo 6 caracteres.');
-        return;
-      }
-      if (!form.senha_atual) {
-        setErro('Senha atual é necessária para alterar a senha.');
-        return;
-      }
+      if (form.nova_senha !== form.confirmar_nova_senha) { setErro('As senhas não coincidem.'); return; }
+      if (form.nova_senha.length < 6) { setErro('A nova senha deve ter no mínimo 6 caracteres.'); return; }
+      if (!form.senha_atual) { setErro('Senha atual é necessária para alterar a senha.'); return; }
     }
     
     setSalvando(true);
     
     try {
-      const payload = {
-        nome_completo: form.nome_completo,
-        email: form.email
-      };
-      
+      const payload = { nome_completo: form.nome_completo, email: form.email };
       if (alterandoSenha && form.nova_senha) {
         payload.senha_atual = form.senha_atual;
         payload.nova_senha = form.nova_senha;
@@ -1593,25 +1629,12 @@ function PerfilModal({ user, onClose, onPerfilAtualizado }) {
       
       if (r.ok) {
         localStorage.setItem('token', res.token);
-        // Atualizar o estado original após salvar
-        setOriginalForm({
-          nome_completo: form.nome_completo,
-          email: form.email
-        });
+        setOriginalForm({ nome_completo: form.nome_completo, email: form.email });
         setSucesso('Perfil atualizado com sucesso!');
         setAlterandoSenha(false);
-        setForm({
-          ...form,
-          senha_atual: '',
-          nova_senha: '',
-          confirmar_nova_senha: ''
-        });
-        if (onPerfilAtualizado) {
-          onPerfilAtualizado(res.user);
-        }
-        setTimeout(() => {
-          onClose();
-        }, 1500);
+        setForm({ ...form, senha_atual: '', nova_senha: '', confirmar_nova_senha: '' });
+        if (onPerfilAtualizado) onPerfilAtualizado(res.user);
+        setTimeout(() => onClose(), 1500);
       } else {
         setErro(res.error || 'Erro ao atualizar perfil.');
       }
@@ -1665,7 +1688,6 @@ function PerfilModal({ user, onClose, onPerfilAtualizado }) {
         />
       </div>
 
-      {/* Checkbox para ativar alteração de senha */}
       <div style={{ marginBottom: 16 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
           <input 
@@ -1673,15 +1695,7 @@ function PerfilModal({ user, onClose, onPerfilAtualizado }) {
             checked={alterandoSenha}
             onChange={(e) => {
               setAlterandoSenha(e.target.checked);
-              if (!e.target.checked) {
-                // Limpar campos de senha se desmarcar
-                setForm({
-                  ...form,
-                  senha_atual: '',
-                  nova_senha: '',
-                  confirmar_nova_senha: ''
-                });
-              }
+              if (!e.target.checked) setForm({ ...form, senha_atual: '', nova_senha: '', confirmar_nova_senha: '' });
             }}
             style={{ width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer' }}
           />
@@ -1689,7 +1703,6 @@ function PerfilModal({ user, onClose, onPerfilAtualizado }) {
         </label>
       </div>
 
-      {/* Campos de senha - só aparecem se o checkbox estiver marcado */}
       {alterandoSenha && (
         <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0 16px', paddingTop: 16 }}>
           <div style={{ marginBottom: 14 }}>
@@ -1755,12 +1768,12 @@ function PerfilModal({ user, onClose, onPerfilAtualizado }) {
     </Modal>
   );
 }
-// ── App Principal ─────────────────────────────────────────────────────────────
-// Decodifica payload do JWT para restaurar sessão sem nova requisição ao servidor
+
+// ── App Principal (Funcionalidade e Roteamento App.jsx mantidos) ──────────────
 const decodeJwt = (tk) => {
   try {
     const payload = JSON.parse(atob(tk.split('.')[1]));
-    if (payload.exp && payload.exp * 1000 < Date.now()) return null; // expirado
+    if (payload.exp && payload.exp * 1000 < Date.now()) return null; 
     return { id: payload.id, nome: payload.nome, email: payload.email || '', nivel_acesso: payload.nivel_acesso };
   } catch { return null; }
 };
@@ -1825,7 +1838,7 @@ export default function App() {
     setUser(novoUsuario);
     carregar();
   };
-  // Conteúdo da página ativa
+
   const renderPagina = () => {
     switch (pagina) {
       case 'novo-chamado':
@@ -1842,7 +1855,7 @@ export default function App() {
           nivel={nivel} 
           api={api} 
           onRecarregar={carregar}
-          registrarVisualizacao={true}  // Adicionar esta linha
+          registrarVisualizacao={true}
         />;
 
       case 'meus-atend':
@@ -1874,14 +1887,13 @@ export default function App() {
           pagina={pagina} 
           setPagina={setPagina} 
           onSair={sair}
-          onAbrirPerfil={() => setShowPerfilModal(true)}  // Adicionar
+          onAbrirPerfil={() => setShowPerfilModal(true)} 
         />
         <main className="main-content">
           {renderPagina()}
         </main>
       </div>
       
-      {/* Modal de Perfil */}
       {showPerfilModal && (
         <PerfilModal 
           user={user}
