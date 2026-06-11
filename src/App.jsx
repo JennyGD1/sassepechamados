@@ -859,10 +859,15 @@ const ACAO_META = {
   RECUSA:     { label: 'Recusa',     color: '#EF4444' },
 };
 
-function HistoricoModal({ chamado, onClose, api }) {
+function HistoricoModal({ chamado, onClose, api, user }) {
   const [hist, setHist] = useState([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
+  const [editandoId, setEditandoId] = useState(null);
+  const [editandoTexto, setEditandoTexto] = useState('');
+  const [salvando, setSalvando] = useState(false);
+  const isAdmin = user?.nivel_acesso === 'MASTER_ADMIN';
+
+  const carregarHistorico = useCallback(() => {
     api(`/chamados/${chamado.id}/historico`).then(d => { 
       if (d) {
         const sorted = [...d].sort((a, b) => new Date(b.data_hora) - new Date(a.data_hora));
@@ -871,7 +876,49 @@ function HistoricoModal({ chamado, onClose, api }) {
       setLoading(false);
     });
   }, [api, chamado.id]);
-  
+
+  useEffect(() => {
+    carregarHistorico();
+  }, [carregarHistorico]);
+
+  const iniciarEdicao = (item) => {
+    setEditandoId(item.id);
+    setEditandoTexto(item.comentario || '');
+  };
+
+  const cancelarEdicao = () => {
+    setEditandoId(null);
+    setEditandoTexto('');
+  };
+
+  const salvarEdicao = async (id) => {
+    if (!editandoTexto.trim()) {
+      alert('O comentário não pode estar vazio');
+      return;
+    }
+    
+    setSalvando(true);
+    try {
+      const response = await api(`/admin/historico/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ comentario: editandoTexto })
+      });
+      
+      if (response && response.success) {
+        setEditandoId(null);
+        setEditandoTexto('');
+        carregarHistorico();
+      } else {
+        alert('❌ Erro ao editar comentário: ' + (response?.error || 'Erro desconhecido'));
+      }
+    } catch (error) {
+      console.error('Erro ao editar:', error);
+      alert('❌ Erro ao conectar com o servidor');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
   return (
     <Modal onClose={onClose}>
       <div className="modal-header">
@@ -889,22 +936,85 @@ function HistoricoModal({ chamado, onClose, api }) {
         <div className="card" style={{ padding: 12, marginBottom: 20, background: 'var(--paper)' }}>
           {chamado.descricao}
         </div>
-        {loading ? <p style={{ textAlign: 'center', padding: 20 }}>Carregando…</p> : hist.map((h, i) => {
-          const meta = ACAO_META[h.acao] || { icon: '•', label: h.acao, color: 'var(--ink-mute)' };
-          return (
-            <div key={i} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', marginTop: 6, background: meta.color, flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                  <span style={{ fontWeight: 600, fontSize: '.875rem' }}>{meta.label}</span>
-                  <span style={{ fontSize: '.75rem', color: 'var(--ink-faint)' }}>{fmt(h.data_hora)}</span>
-                </div>
-                <div style={{ fontSize: '.8rem', color: 'var(--ink-soft)', marginBottom: 4 }}>por {h.nome_completo}</div>
-                {h.comentario && <div className="card" style={{ padding: 8, background: 'var(--paper)', marginTop: 4 }}>{h.comentario}</div>}
-              </div>
+        
+        {isAdmin && (
+          <div className="card" style={{ marginBottom: 20, background: '#FEF3C7', padding: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span style={{ fontSize: '0.8rem', color: '#92400E' }}>
+                Modo Admin: Você pode editar qualquer comentário
+              </span>
             </div>
-          );
-        })}
+          </div>
+        )}
+        
+        {loading ? (
+          <p style={{ textAlign: 'center', padding: 20 }}>Carregando…</p>
+        ) : hist.length === 0 ? (
+          <p style={{ textAlign: 'center', padding: 20, color: 'var(--ink-soft)' }}>Nenhum histórico encontrado.</p>
+        ) : (
+          hist.map((h, i) => {
+            const meta = ACAO_META[h.acao] || { icon: '•', label: h.acao, color: 'var(--ink-mute)' };
+            const isEditando = editandoId === h.id;
+            
+            return (
+              <div key={i} style={{ marginBottom: 16, borderBottom: '1px solid var(--line)', paddingBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', marginTop: 6, background: meta.color, flexShrink: 0 }} />
+                    <span style={{ fontWeight: 600, fontSize: '.875rem' }}>{meta.label}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '.75rem', color: 'var(--ink-faint)' }}>{fmt(h.data_hora)}</span>
+                    {isAdmin && !isEditando && (
+                      <button
+                        className="btn-icon"
+                        style={{ width: 28, height: 28 }}
+                        title="Editar comentário"
+                        onClick={() => iniciarEdicao(h)}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17 3l4 4-7 7H10v-4l7-7z"/>
+                          <path d="M4 20h16"/>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                <div style={{ fontSize: '.8rem', color: 'var(--ink-soft)', marginBottom: 4 }}>
+                  por {h.nome_completo}
+                </div>
+                
+                {isEditando ? (
+                  <div style={{ marginTop: 8 }}>
+                    <textarea
+                      className="input-field"
+                      rows={3}
+                      value={editandoTexto}
+                      onChange={e => setEditandoTexto(e.target.value)}
+                      style={{ marginBottom: 8 }}
+                    />
+                    <div className="button-group" style={{ justifyContent: 'flex-end' }}>
+                      <button className="btn btn-secondary btn-sm" onClick={cancelarEdicao} disabled={salvando}>
+                        Cancelar
+                      </button>
+                      <button className="btn btn-primary btn-sm" onClick={() => salvarEdicao(h.id)} disabled={salvando}>
+                        {salvando ? 'Salvando...' : 'Salvar'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  h.comentario && <div className="card" style={{ padding: 8, background: 'var(--paper)', marginTop: 4 }}>{h.comentario}</div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
     </Modal>
   );
@@ -935,6 +1045,620 @@ function ResolucaoModal({ chamado, onClose, onConfirm }) {
               <polyline points="20 6 9 17 4 12"/>
             </svg>
             Enviar para Validação
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+function MovimentacoesTecnicasModal({ chamado, onClose, api, user }) {
+  const [movimentacoes, setMovimentacoes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState('');
+  const [editandoId, setEditandoId] = useState(null);
+  const [editandoTexto, setEditandoTexto] = useState('');
+  const [salvando, setSalvando] = useState(false);
+  const isAdmin = user?.nivel_acesso === 'MASTER_ADMIN';
+
+  const carregarMovimentacoes = useCallback(async () => {
+    setLoading(true);
+    setErro('');
+    try {
+      const data = await api(`/chamados/${chamado.id}/movimentacoes-tecnicas`);
+      if (data && Array.isArray(data)) {
+        const ordenadas = [...data].sort((a, b) => new Date(b.data_hora) - new Date(a.data_hora));
+        
+        if (user.nivel_acesso === 'SOLICITANTE' || user.nivel_acesso === 'SOLICITANTE2') {
+          const apenasPublicos = ordenadas.filter(mov => mov.tipo_comentario === 'PUBLICO');
+          setMovimentacoes(apenasPublicos);
+        } 
+        else if (user.nivel_acesso === 'TECNICO') {
+          const tecnicos = ordenadas.filter(mov => {
+            if (mov.tipo_comentario === 'PUBLICO') return true;
+            if (mov.para_usuario_id === user.id) return true;
+            if (mov.id_usuario === user.id) return true;
+            return false;
+          });
+          setMovimentacoes(tecnicos);
+        }
+        else if (user.nivel_acesso === 'MASTER_ADMIN') {
+          setMovimentacoes(ordenadas);
+        }
+        else {
+          setMovimentacoes(ordenadas.filter(mov => mov.tipo_comentario === 'PUBLICO'));
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar movimentações:', error);
+      setErro('Erro ao carregar movimentações técnicas.');
+    } finally {
+      setLoading(false);
+    }
+  }, [chamado.id, api, user]);
+
+  useEffect(() => {
+    carregarMovimentacoes();
+  }, [carregarMovimentacoes]);
+
+  const iniciarEdicao = (item) => {
+    setEditandoId(item.id);
+    setEditandoTexto(item.comentario || '');
+  };
+
+  const cancelarEdicao = () => {
+    setEditandoId(null);
+    setEditandoTexto('');
+  };
+
+  const salvarEdicao = async (id) => {
+    if (!editandoTexto.trim()) {
+      alert('O comentário não pode estar vazio');
+      return;
+    }
+    
+    setSalvando(true);
+    try {
+      const response = await api(`/admin/historico-tecnico/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ comentario: editandoTexto })
+      });
+      
+      if (response && response.success) {
+        setEditandoId(null);
+        setEditandoTexto('');
+        carregarMovimentacoes();
+      } else {
+        alert('❌ Erro ao editar comentário: ' + (response?.error || 'Erro desconhecido'));
+      }
+    } catch (error) {
+      console.error('Erro ao editar:', error);
+      alert('❌ Erro ao conectar com o servidor');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  if (erro) {
+    return (
+      <Modal onClose={onClose}>
+        <div className="modal-header">
+          <h2>Erro</h2>
+          <button className="btn-icon" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="card" style={{ textAlign: 'center', padding: 40, color: '#EF4444' }}>
+            <p>{erro}</p>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal onClose={onClose}>
+      <div className="modal-header">
+        <div>
+          <div className="label">Movimentações Técnicas</div>
+          <h2>{chamado.numero_chamado}</h2>
+        </div>
+        <button className="btn-icon" onClick={onClose}>✕</button>
+      </div>
+      <div className="modal-body">
+        <div className="card" style={{ padding: 12, marginBottom: 20, background: 'var(--paper)' }}>
+          <strong>Chamado:</strong> {chamado.numero_chamado}
+          <div style={{ fontSize: '0.8rem', marginTop: 4 }}>{chamado.descricao?.substring(0, 100)}...</div>
+        </div>
+
+        {isAdmin && (
+          <div className="card" style={{ marginBottom: 20, background: '#FEF3C7', padding: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span style={{ fontSize: '0.8rem', color: '#92400E' }}>
+                Modo Admin: Você pode editar qualquer comentário
+              </span>
+            </div>
+          </div>
+        )}
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 40 }}>Carregando...</div>
+        ) : movimentacoes.length === 0 ? (
+          <div className="card" style={{ textAlign: 'center', padding: 40, color: 'var(--ink-soft)' }}>
+            Nenhuma movimentação técnica disponível
+          </div>
+        ) : (
+          movimentacoes.map((mov, idx) => {
+            const isPrivado = mov.tipo_comentario === 'PRIVADO';
+            const dataHora = new Date(mov.data_hora).toLocaleString('pt-BR');
+            const isEncaminhamento = mov.acao === 'ENCAMINHAMENTO';
+            const isPrimeira = idx === 0;
+            const isEditando = editandoId === mov.id;
+            
+            return (
+              <div 
+                key={mov.id || idx}
+                style={{
+                  marginBottom: 16,
+                  padding: 16,
+                  background: isPrivado ? '#F3E8FF' : 'white',
+                  borderRadius: 12,
+                  border: `1px solid ${isPrivado ? '#8B5CF6' : 'var(--line)'}`,
+                  borderLeft: `4px solid ${isPrivado ? '#8B5CF6' : 'var(--maida-blue)'}`,
+                  position: 'relative'
+                }}
+              >
+                {isPrimeira && (
+                  <div style={{
+                    position: 'absolute',
+                    top: -10,
+                    right: 10,
+                    background: 'var(--maida-pink)',
+                    color: 'white',
+                    fontSize: '0.6rem',
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    fontWeight: 600
+                  }}>
+                    Última
+                  </div>
+                )}
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+                  <div>
+                    <strong>
+                      {isEncaminhamento ? '↗ Encaminhamento' : (isPrivado ? ' Comentário Privado' : ' Comentário Público')}
+                    </strong>
+                    {mov.para_usuario_nome && (
+                      <span className="badge" style={{ background: '#8B5CF620', color: '#8B5CF6', marginLeft: 8 }}>
+                        Para: {mov.para_usuario_nome}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--ink-faint)' }}>{dataHora}</span>
+                    {isAdmin && !isEditando && (
+                      <button
+                        className="btn-icon"
+                        style={{ width: 28, height: 28 }}
+                        title="Editar comentário"
+                        onClick={() => iniciarEdicao(mov)}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17 3l4 4-7 7H10v-4l7-7z"/>
+                          <path d="M4 20h16"/>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                <div style={{ fontSize: '0.8rem', color: 'var(--ink-soft)', marginBottom: 8 }}>
+                  Por: <strong>{mov.usuario_nome}</strong>
+                </div>
+                
+                {isEditando ? (
+                  <div style={{ marginTop: 8 }}>
+                    <textarea
+                      className="input-field"
+                      rows={3}
+                      value={editandoTexto}
+                      onChange={e => setEditandoTexto(e.target.value)}
+                      style={{ marginBottom: 8 }}
+                    />
+                    <div className="button-group" style={{ justifyContent: 'flex-end' }}>
+                      <button className="btn btn-secondary btn-sm" onClick={cancelarEdicao} disabled={salvando}>
+                        Cancelar
+                      </button>
+                      <button className="btn btn-primary btn-sm" onClick={() => salvarEdicao(mov.id)} disabled={salvando}>
+                        {salvando ? 'Salvando...' : 'Salvar'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  mov.comentario && (
+                    <div style={{
+                      padding: 10,
+                      background: isPrivado ? '#F3E8FF' : '#F9FAFB',
+                      borderRadius: 8,
+                      marginTop: 8,
+                      fontSize: '0.85rem',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word'
+                    }}>
+                      {mov.comentario}
+                    </div>
+                  )
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </Modal>
+  );
+}
+function DevolverModal({ chamado, onClose, onConfirm }) {
+  const [comentario, setComentario] = useState('');
+  const [enviando, setEnviando] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!comentario.trim()) {
+      return;
+    }
+    setEnviando(true);
+    await onConfirm(comentario);
+    setEnviando(false);
+  };
+
+  return (
+    <Modal onClose={onClose}>
+      <div className="modal-header">
+        <h2>Devolver Chamado</h2>
+        <button className="btn-icon" onClick={onClose}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div className="modal-body">
+        <div className="card" style={{ padding: 12, marginBottom: 20, background: 'var(--paper)' }}>
+          <div><strong>Chamado:</strong> #{chamado.numero_chamado}</div>
+          <div style={{ fontSize: '.8rem', marginTop: 4, color: 'var(--ink-soft)' }}>
+            {chamado.descricao?.substring(0, 100)}...
+          </div>
+          <div style={{ fontSize: '.7rem', marginTop: 8, color: 'var(--ink-faint)' }}>
+            Devolvendo para: <strong>{chamado.responsavel_inicial_nome || chamado.responsavel_final_nome || 'responsável final'}</strong>
+          </div>
+        </div>
+
+        <p style={{ color: 'var(--ink-soft)', marginBottom: 20 }}>
+          Descreva a solução aplicada. O responsável final irá revisar e enviar para validação do cliente.
+        </p>
+
+        <div style={{ marginBottom: 20 }}>
+          <label className="label">Descrição da Solução *</label>
+          <textarea 
+            className="input-field" 
+            rows={5} 
+            value={comentario} 
+            onChange={e => setComentario(e.target.value)}
+            placeholder="Descreva detalhadamente o que foi feito para resolver o problema…"
+          />
+        </div>
+
+        <div className="button-group" style={{ justifyContent: 'flex-end' }}>
+          <button className="btn btn-secondary" onClick={onClose} disabled={enviando}>
+            Cancelar
+          </button>
+          <button 
+            className="btn btn-warning" 
+            disabled={!comentario.trim() || enviando} 
+            onClick={handleSubmit}
+          >
+            {enviando ? (
+              <>
+                <div className="loading-spinner" style={{ width: 14, height: 14, borderWidth: 2 }}></div>
+                Devolvendo...
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                  <path d="M3 3v5h5"/>
+                </svg>
+                Devolver para Responsável Final
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+function EncaminharModal({ chamado, onClose, onConfirm, user, api }) {
+  const [tecnicoSelecionado, setTecnicoSelecionado] = useState('');
+  const [comentario, setComentario] = useState('');
+  const [tipoComentario, setTipoComentario] = useState('PUBLICO');
+  const [enviando, setEnviando] = useState(false);
+  const [tecnicos, setTecnicos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState('');
+
+  useEffect(() => {
+    const carregarTecnicos = async () => {
+      setLoading(true);
+      setErro('');
+      try {
+        console.log('🔍 Buscando técnicos disponíveis...');
+        const data = await api('/tecnicos/disponiveis');
+        console.log('📋 Técnicos recebidos:', data);
+        
+        if (data && Array.isArray(data)) {
+          setTecnicos(data);
+          if (data.length === 0) {
+            setErro('Nenhum técnico disponível para encaminhamento.');
+          }
+        } else {
+          setErro('Erro ao carregar lista de técnicos.');
+        }
+      } catch (error) {
+        console.error('❌ Erro ao carregar técnicos:', error);
+        setErro('Não foi possível carregar a lista de técnicos. Tente novamente.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (api) {
+      carregarTecnicos();
+    }
+  }, [api]);
+
+  const handleSubmit = async () => {
+    if (!tecnicoSelecionado) {
+      setErro('Selecione um técnico para encaminhar.');
+      return;
+    }
+    
+    setEnviando(true);
+    setErro('');
+    
+    const dados = {
+      paraUsuarioId: parseInt(tecnicoSelecionado),
+      comentarioPublico: tipoComentario === 'PUBLICO' ? comentario : null,
+      comentarioPrivado: tipoComentario === 'PRIVADO' ? comentario : null
+    };
+    
+    await onConfirm(dados);
+    setEnviando(false);
+  };
+
+  const tecnicoSelecionadoObj = tecnicos.find(t => t.id === parseInt(tecnicoSelecionado));
+
+  return (
+    <Modal onClose={onClose}>
+      <div className="modal-header">
+        <h2>Encaminhar Chamado</h2>
+        <button className="btn-icon" onClick={onClose}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div className="modal-body">
+        {/* Informação do chamado */}
+        <div className="card" style={{ padding: 12, marginBottom: 20, background: 'var(--paper)' }}>
+          <div><strong>Chamado:</strong> #{chamado.numero_chamado}</div>
+          <div style={{ fontSize: '.8rem', marginTop: 4, color: 'var(--ink-soft)' }}>
+            {chamado.descricao?.substring(0, 100)}...
+          </div>
+          <div style={{ fontSize: '.7rem', marginTop: 8, color: 'var(--ink-faint)' }}>
+            Status atual: {STATUS_LABEL[chamado.status] || chamado.status}
+          </div>
+        </div>
+
+        {erro && (
+          <div className="card" style={{ 
+            padding: 12, 
+            marginBottom: 20, 
+            background: '#FEF2F2', 
+            borderLeft: '3px solid #EF4444',
+            color: '#991B1B'
+          }}>
+            <strong>❌ {erro}</strong>
+          </div>
+        )}
+
+        <div style={{ marginBottom: 20 }}>
+          <label className="label">Encaminhar para:</label>
+          {loading ? (
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 12, 
+              padding: '16px',
+              background: 'var(--paper)',
+              borderRadius: 12,
+              justifyContent: 'center'
+            }}>
+              <div className="loading-spinner" style={{ 
+                width: 20, 
+                height: 20, 
+                border: '2px solid var(--maida-blue)',
+                borderTopColor: 'transparent',
+                borderRadius: '50%',
+                animation: 'spin 0.8s linear infinite'
+              }}></div>
+              <span>Carregando técnicos disponíveis...</span>
+            </div>
+          ) : tecnicos.length === 0 ? (
+            <div style={{ 
+              padding: 16, 
+              background: '#FEF3C7', 
+              borderRadius: 12, 
+              color: '#92400E',
+              textAlign: 'center'
+            }}>
+              ⚠️ Nenhum técnico disponível no momento.
+            </div>
+          ) : (
+            <select 
+              className="input-field" 
+              value={tecnicoSelecionado} 
+              onChange={e => setTecnicoSelecionado(e.target.value)}
+              style={{ cursor: 'pointer' }}
+            >
+              <option value="">-- Selecione um técnico --</option>
+              {tecnicos.map(t => (
+                <option key={t.id} value={t.id}>
+                  👤 {t.nome_completo} - {t.chamados_ativos || 0} chamado(s) ativo(s)
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {tecnicoSelecionado && (
+          <>
+            <div style={{ marginBottom: 20 }}>
+              <label className="label">Tipo de Comentário</label>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => setTipoComentario('PUBLICO')}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    borderRadius: 10,
+                    border: `2px solid ${tipoComentario === 'PUBLICO' ? '#10B981' : 'var(--line)'}`,
+                    background: tipoComentario === 'PUBLICO' ? '#10B98110' : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{ fontSize: '1.2rem' }}>🌐</div>
+                  <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Público</div>
+                  <small style={{ fontSize: '0.7rem', color: 'var(--ink-soft)' }}>Todos veem</small>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTipoComentario('PRIVADO')}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    borderRadius: 10,
+                    border: `2px solid ${tipoComentario === 'PRIVADO' ? '#8B5CF6' : 'var(--line)'}`,
+                    background: tipoComentario === 'PRIVADO' ? '#8B5CF610' : 'transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{ fontSize: '1.2rem' }}>🔒</div>
+                  <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Privado</div>
+                  <small style={{ fontSize: '0.7rem', color: 'var(--ink-soft)' }}>Só o destino</small>
+                </button>
+              </div>
+            </div>
+
+            {/* Comentário */}
+            <div style={{ marginBottom: 20 }}>
+              <label className="label">
+                {tipoComentario === 'PUBLICO' ? 'Comentário Público' : 'Comentário Privado'}
+              </label>
+              <textarea 
+                className="input-field" 
+                rows={4}
+                value={comentario} 
+                onChange={e => setComentario(e.target.value)}
+                placeholder={tipoComentario === 'PUBLICO' 
+                  ? "Descreva o motivo do encaminhamento (visível para todos)..."
+                  : "Descreva o motivo do encaminhamento (visível APENAS para o técnico destino)..."}
+                style={{ resize: 'vertical' }}
+              />
+              <small style={{ 
+                color: tipoComentario === 'PUBLICO' ? '#10B981' : '#8B5CF6', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 4, 
+                marginTop: 8,
+                fontSize: '0.7rem'
+              }}>
+                {tipoComentario === 'PUBLICO' ? '✅' : '🔒'} 
+                {tipoComentario === 'PUBLICO' 
+                  ? 'Este comentário será visível para todos os usuários do sistema' 
+                  : `Apenas ${tecnicoSelecionadoObj?.nome_completo || 'o técnico destino'} poderá ver este comentário`}
+              </small>
+            </div>
+
+            {/* Preview */}
+            {comentario && (
+              <div className="card" style={{ 
+                padding: 12, 
+                marginBottom: 20, 
+                background: tipoComentario === 'PUBLICO' ? '#10B98110' : '#8B5CF610',
+                borderLeft: `3px solid ${tipoComentario === 'PUBLICO' ? '#10B981' : '#8B5CF6'}`
+              }}>
+                <div style={{ fontSize: '.75rem', fontWeight: 600, marginBottom: 8 }}>
+                  📋 Resumo do encaminhamento:
+                </div>
+                <div style={{ fontSize: '.75rem', marginBottom: 4 }}>
+                  <strong>Destino:</strong> {tecnicoSelecionadoObj?.nome_completo}
+                </div>
+                <div style={{ fontSize: '.75rem', marginBottom: 8 }}>
+                  <strong>Mensagem:</strong>
+                </div>
+                <div style={{ 
+                  fontSize: '.75rem', 
+                  padding: 8,
+                  background: 'white',
+                  borderRadius: 6,
+                  wordBreak: 'break-word'
+                }}>
+                  {comentario}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        <div className="button-group" style={{ justifyContent: 'flex-end', marginTop: 20 }}>
+          <button 
+            className="btn btn-secondary" 
+            onClick={onClose}
+            disabled={enviando}
+          >
+            Cancelar
+          </button>
+          <button 
+            className="btn btn-primary" 
+            disabled={!tecnicoSelecionado || enviando || loading} 
+            onClick={handleSubmit}
+            style={{ 
+              background: '#8B5CF6', 
+              borderColor: '#8B5CF6',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}
+          >
+            {enviando ? (
+              <>
+                <div className="loading-spinner" style={{ width: 14, height: 14, borderWidth: 2 }}></div>
+                Encaminhando...
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+                Encaminhar Chamado
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -990,12 +1714,13 @@ function AvaliacaoModal({ chamado, onClose, onConfirm, api }) {
     </Modal>
   );
 }
-// ── Card de Chamado (Estilo iMaida com Corner Cutout) ──────────────────────────
-function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHistorico }) {
+// ── Card de Chamado 
+function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHistorico, onEncaminhar, onMovimentacoes, onDevolver }) {
   const isMeu       = `${c.id_solicitante}` === `${userId}`;
   const isResp      = `${c.id_responsavel}` === `${userId}`;
   const vencido     = c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO';
   const podeAssumir = !c.id_responsavel && !isMeu && (nivel === 'TECNICO' || nivel === 'MASTER_ADMIN');
+  const podeEncaminhar = (isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE' && c.id_responsavel;
 
   let slaClass = 'sla-ok';
   if (c.status === 'CONCLUIDO') slaClass = 'status-concluido';
@@ -1009,44 +1734,130 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
 
   const handleAssumir = (e) => { e.stopPropagation(); onAssumir(c.id); };
   const handleFechar = (e) => { e.stopPropagation(); onFechar(c); };
-  
   const handleAvaliar = (e) => { e.stopPropagation(); onValidar(c); };
+  const handleEncaminhar = (e) => { e.stopPropagation(); onEncaminhar(c); };
+  const handleDevolver = (e) => { 
+    e.stopPropagation(); 
+    if (onDevolver) onDevolver(c); 
+  };
+
+  const podeFinalizar = (isResp || nivel === 'MASTER_ADMIN') && 
+                        c.status === 'EM ANALISE' && 
+                        (c.id_responsavel_final === userId || nivel === 'MASTER_ADMIN');
+
+  const podeDevolver = isResp && 
+                       c.status === 'EM ANALISE' && 
+                       c.id_responsavel_final && 
+                       c.id_responsavel_final !== userId;
+
+  const nomeResponsavel = c.responsavel_inicial_nome || c.responsavel_nome || '—';
+  const nomeResponsavelAbrev = nomeResponsavel.split(' ')[0];
 
   return (
     <div className={`chamado-card ${slaClass}`}>
       {/* Corner cutout com botões */}
       <div className="corner">
         
-        {/* BOTÃO DE HISTÓRICO - Movido para cá (Botão de edição removido) */}
+        {/* BOTÃO DE HISTÓRICO */}
         <button
           className="corner-btn"
           title="Histórico"
           onClick={(e) => { e.stopPropagation(); onHistorico(c); }}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
             <circle cx="12" cy="12" r="10"/>
             <polyline points="12 6 12 12 16 14"/>
           </svg>
         </button>
 
+        <button
+          className="corner-btn"
+          title="Movimentações Técnicas"
+          onClick={(e) => { e.stopPropagation(); onMovimentacoes(c); }}
+          style={{ background: '#6B7280', color: 'white', borderColor: '#6B7280' }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="8" y1="6" x2="21" y2="6"/>
+            <line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/>
+            <line x1="3" y1="12" x2="3.01" y2="12"/>
+            <line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+        </button>
+
         {podeAssumir && (
           <button className="corner-btn btn-assume" title="Assumir Chamado" onClick={handleAssumir}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
               <path d="M18 8h1a4 4 0 0 1 0 8h-1"/>
               <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
               <line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>
             </svg>
           </button>
         )}
-        {((isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE') && (
-          <button className="corner-btn btn-resolve" title="Finalizar Atendimento" onClick={handleFechar}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+
+        {podeEncaminhar && (
+          <button 
+            className="corner-btn" 
+            style={{ 
+              background: '#8B5CF6', 
+              color: 'white', 
+              borderColor: '#8B5CF6',
+              width: 'auto',
+              padding: '0 10px',
+              borderRadius: '15px',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              gap: '4px'
+            }}
+            title="Encaminhar para outro técnico" 
+            onClick={handleEncaminhar}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            Encaminhar
+          </button>
+        )}
+
+        {podeDevolver && (
+          <button 
+            className="corner-btn" 
+            style={{ 
+              background: '#F59E0B', 
+              color: 'white', 
+              borderColor: '#F59E0B',
+              width: 'auto',
+              padding: '0 10px',
+              borderRadius: '15px',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              gap: '4px'
+            }}
+            title="Devolver para responsável final" 
+            onClick={handleDevolver}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+            Devolver
+          </button>
+        )}
+
+        {podeFinalizar && (
+          <button 
+            className="corner-btn btn-resolve" 
+            title="Enviar para Validação do Cliente" 
+            onClick={handleFechar}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
           </button>
         )}
-        
-        {/* NOVO BOTÃO ÚNICO DE AVALIAÇÃO */}
+
         {(isMeu && c.status === 'AGUARDANDO VALIDACAO') && (
           <button 
             className="corner-btn" 
@@ -1068,32 +1879,41 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
         )}
       </div>
 
-      {/* Header limpo, apenas com o ID */}
       <div className="ticket-header">
         <div className="ticket-id">#{c.numero_chamado}</div>
+        {isResp && c.id_responsavel_final !== userId && c.status === 'EM ANALISE' && (
+          <span className="badge" style={{ background: '#3B82F620', color: '#3B82F6', fontSize: '9px' }}>
+            🔧 Responsável Atual
+          </span>
+        )}
       </div>
 
-      {/* Badges de status */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-        <Badge label={c.criticidade}                       color={CRIT_COLOR[c.criticidade]} />
-        <Badge label={`Compl. ${c.complexidade}`}          color="#6B7280" />
-        <Badge label={STATUS_LABEL[c.status] || c.status}  color={statusColor} />
-        {vencido && <Badge label="SLA" color="#EF4444" />}
+        <Badge label={c.criticidade} color={CRIT_COLOR[c.criticidade]} />
+        <Badge label={`Compl. ${c.complexidade}`} color="#6B7280" />
+        <Badge label={STATUS_LABEL[c.status] || c.status} color={statusColor} />
+        {vencido && <Badge label="SLA Vencido" color="#EF4444" />}
       </div>
 
-      {/* Título / descrição resumida */}
       <div className="ticket-title">
         {c.descricao.length > 85 ? c.descricao.substring(0, 85) + '…' : c.descricao}
       </div>
 
-      {/* Footer */}
       <div className="ticket-footer">
         <div>
           <div><strong>Solicitante:</strong> {c.solicitante_nome?.split(' ')[0] || c.solicitante_nome}</div>
           <div style={{ fontSize: '11px', color: 'var(--ink-faint)', marginTop: 2 }}>Aberto: {fmt(c.data_abertura)}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div><strong>Responsável:</strong> {c.responsavel_nome?.split(' ')[0] || c.responsavel_nome || '—'}</div>
+          <div>
+            <strong>Responsável:</strong> {nomeResponsavelAbrev}
+            {c.responsavel_nome && c.responsavel_inicial_nome && 
+             c.responsavel_nome !== c.responsavel_inicial_nome && (
+              <span style={{ fontSize: '10px', color: 'var(--ink-faint)', display: 'block' }}>
+                Atual: {c.responsavel_nome?.split(' ')[0]}
+              </span>
+            )}
+          </div>
           <div style={{ fontSize: '11px', color: vencido ? '#EF4444' : 'var(--ink-faint)', marginTop: 2, fontWeight: vencido ? 700 : 400 }}>
             SLA: {fmt(c.prazo_limite)}
           </div>
@@ -1157,6 +1977,8 @@ const NIVEL_META = {
   SOLICITANTE:  { label: 'Solicitante',  color: '#F59E0B' },
   TECNICO:      { label: 'Técnico',      color: '#3B82F6' },
   MASTER_ADMIN: { label: 'Master Admin', color: '#8B5CF6' },
+  SOLICITANTE2:  { label: 'Solicitante2',  color: '#8b5cf6' },
+
 };
 
 function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
@@ -1168,10 +1990,16 @@ function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
     { id: 'meus-chamados',  icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></>, label: 'Meus Chamados' },
     { id: 'novo-chamado',   icon: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>, label: 'Abrir Chamado' },
   ];
+  const navSolicitante2 = [ 
+    { id: 'dashboard',      icon: <path d="M3 3h7v7H3zm11 0h7v7h-7zm0 11h7v7h-7zM3 14h7v7H3z"/>, label: 'Dashboard' },
+    { id: 'todos-chamados', icon: <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>, label: 'Todos os Chamados' },
+    { id: 'meus-chamados',  icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></>, label: 'Meus Chamados' },
+    { id: 'novo-chamado',   icon: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>, label: 'Abrir Chamado' },
+  ];
 
   const navTecnico = [
     { id: 'dashboard',      icon: <path d="M3 3h7v7H3zm11 0h7v7h-7zm0 11h7v7h-7zM3 14h7v7H3z"/>, label: 'Dashboard' },
-    { id: 'bandeja',        icon: <><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></>, label: 'Bandeja' },
+    { id: 'todos-chamados', icon: <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>, label: 'Todos os Chamados' },
     { id: 'meus-atend',     icon: <path d="M13 2L3 14h8l-2 8 10-12h-8z"/>, label: 'Meus Atendimentos' },
   ];
 
@@ -1180,12 +2008,14 @@ function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
     { id: 'todos-chamados', icon: <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>, label: 'Todos os Chamados' },
     { id: 'meus-chamados',  icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></>, label: 'Meus Chamados' },
     { id: 'novo-chamado',   icon: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>, label: 'Abrir Chamado' },
-    { id: 'bandeja',        icon: <><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></>, label: 'Bandeja' },
     { id: 'usuarios',       icon: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>, label: 'Usuários' },
     { id: 'logs-visualizacao', icon: <><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></>, label: 'Logs' },
   ];
 
-  const items = nivel === 'MASTER_ADMIN' ? navAdmin : nivel === 'TECNICO' ? navTecnico : navSolicitante;
+  const items = nivel === 'MASTER_ADMIN' ? navAdmin : 
+              nivel === 'SOLICITANTE2' ? navSolicitante2 :
+              nivel === 'TECNICO' ? navTecnico : 
+              navSolicitante;
 
   return (
     <nav className="sidebar">
@@ -1319,12 +2149,244 @@ function NovoChamadoView({ user, api, onSucesso }) {
     </div>
   );
 }
-
-// ── View: Lista de chamados genérica ─────────────────────────────────────────
-function ListaChamados({ titulo, chamados, userId, nivel, api, onRecarregar, registrarVisualizacao = false }) {
+// ── View: Meus Atendimentos 
+function MeusAtendimentosView({ titulo, userId, nivel, api, onRecarregar, registrarVisualizacao = true }) {
+  const [chamados, setChamados] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [histModal, setHistModal] = useState(null);
   const [resolModal, setResolModal] = useState(null);
   const [avaliarModal, setAvaliarModal] = useState(null);
+  const [encaminharModal, setEncaminharModal] = useState(null);
+  const [movimentacoesModal, setMovimentacoesModal] = useState(null);
+  const [filtroStatus, setFiltroStatus] = useState('TODOS');
+  const [devolverModal, setDevolverModal] = useState(null);
+
+  const carregarMeusAtendimentos = useCallback(async () => {
+    setLoading(true);
+    const data = await api('/chamados/meus-atendimentos');
+    if (data) setChamados(data);
+    setLoading(false);
+  }, [api]);
+
+  useEffect(() => {
+    carregarMeusAtendimentos();
+  }, [carregarMeusAtendimentos]);
+  
+  useEffect(() => {
+    if (chamados.length >= 0 && !loading) {
+      const registrarVisualizacao = async () => {
+        try {
+          await api('/logs/visualizacao-meus-atendimentos', { 
+            method: 'POST', 
+            body: JSON.stringify({ 
+              totalChamadosVisiveis: chamados.length,
+              aba: 'meus_atendimentos'
+            }) 
+          });
+          console.log('✅ Visualização de Meus Atendimentos registrada:', chamados.length);
+        } catch (err) { 
+          console.debug('Erro ao registrar visualização:', err); 
+        }
+      };
+      registrarVisualizacao();
+    }
+  }, [chamados.length, loading, api]);
+
+  const assumir = async id => { 
+    await api(`/chamados/${id}/assumir`, { method: 'PUT' }); 
+    carregarMeusAtendimentos(); 
+    onRecarregar();
+  };
+  
+  const fechar = async (ch, txt) => { 
+    await api(`/chamados/${ch.id}/fechar`, { method: 'PUT', body: JSON.stringify({ descricaoResolucao: txt }) }); 
+    setResolModal(null); 
+    carregarMeusAtendimentos(); 
+    onRecarregar();
+  };
+  
+  const validar = async (id, ok) => { 
+    await api(`/chamados/${id}/validar`, { method: 'PUT', body: JSON.stringify({ aprovado: ok }) }); 
+    setAvaliarModal(null);
+    carregarMeusAtendimentos(); 
+    onRecarregar();
+  };
+  
+  const handleMovimentacoes = (chamado) => setMovimentacoesModal(chamado);
+  
+  const encaminhar = async (chamadoId, dados) => {
+    try {
+      const response = await api(`/chamados/${chamadoId}/encaminhar`, { 
+        method: 'PUT', 
+        body: JSON.stringify(dados) 
+      });
+      if (response && response.success) {
+        setEncaminharModal(null);
+        carregarMeusAtendimentos();
+        onRecarregar();
+      } else {
+        alert('❌ Erro ao encaminhar: ' + (response?.error || 'Erro desconhecido'));
+      }
+    } catch (error) {
+      console.error('Erro ao encaminhar:', error);
+      alert('❌ Erro ao conectar com o servidor');
+    }
+  };
+
+  const devolver = async (chamadoId, comentario) => {
+  try {
+    const response = await api(`/chamados/${chamadoId}/devolver`, { 
+      method: 'PUT', 
+      body: JSON.stringify({ comentarioResolucao: comentario }) 
+    });
+    if (response && response.success) {
+      setDevolverModal(null);
+      carregarMeusAtendimentos();
+      onRecarregar();
+    } else {
+      alert('❌ Erro ao devolver: ' + (response?.error || 'Erro desconhecido'));
+    }
+  } catch (error) {
+    console.error('Erro ao devolver:', error);
+    alert('❌ Erro ao conectar com o servidor');
+  }
+};
+
+  // Filtrar por status
+  const chamadosFiltrados = filtroStatus === 'TODOS' 
+    ? chamados 
+    : chamados.filter(c => c.status === filtroStatus);
+
+  const statusOptions = [
+    { value: 'TODOS', label: 'Todos', color: 'var(--ink)' },
+    { value: 'ABERTO', label: 'Aberto', color: '#F59E0B' },
+    { value: 'EM ANALISE', label: 'Em Análise', color: '#3B82F6' },
+    { value: 'AGUARDANDO VALIDACAO', label: 'Aguard. Validação', color: '#8B5CF6' },
+    { value: 'CONCLUIDO', label: 'Concluído', color: '#10B981' },
+  ];
+
+  const statusCounts = {
+    TOTAL: chamados.length,
+    ABERTO: chamados.filter(c => c.status === 'ABERTO').length,
+    'EM ANALISE': chamados.filter(c => c.status === 'EM ANALISE').length,
+    'AGUARDANDO VALIDACAO': chamados.filter(c => c.status === 'AGUARDANDO VALIDACAO').length,
+    CONCLUIDO: chamados.filter(c => c.status === 'CONCLUIDO').length,
+  };
+
+  if (loading) return <div className="card" style={{ textAlign: 'center' }}>Carregando...</div>;
+
+  return (
+    <div>
+      <div className="top-bar">
+        <h1 className="page-title">{titulo}</h1>
+      </div>
+
+      {/* Filtro de Status */}
+      <div className="card" style={{ marginBottom: 24, padding: '16px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--ink)' }}>Filtrar por status:</span>
+          <div className="button-group">
+            {statusOptions.map(option => (
+              <button
+                key={option.value}
+                onClick={() => setFiltroStatus(option.value)}
+                className={`btn btn-outline btn-sm ${filtroStatus === option.value ? 'active' : ''}`}
+                style={{
+                  background: filtroStatus === option.value ? option.color : 'transparent',
+                  color: filtroStatus === option.value ? 'white' : option.color,
+                  borderColor: option.color,
+                }}
+              >
+                {option.label}
+                {option.value !== 'TODOS' && statusCounts[option.value] > 0 && (
+                  <span style={{
+                    marginLeft: 6,
+                    background: filtroStatus === option.value ? 'rgba(255,255,255,0.2)' : option.color + '20',
+                    padding: '2px 6px',
+                    borderRadius: 12,
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                  }}>
+                    {statusCounts[option.value]}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {chamadosFiltrados.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--ink-soft)' }}>
+          <p>Nenhum chamado encontrado onde você é responsável (atual ou inicial).</p>
+        </div>
+      ) : (
+        <div className="tickets-grid">
+          {chamadosFiltrados.map(c => {
+            // Determinar qual nome mostrar no card (responsável inicial)
+            const chamadoModificado = {
+              ...c,
+              responsavel_nome: c.responsavel_inicial_nome || c.responsavel_nome // Mostra o inicial no card
+            };
+            return (
+              <ChamadoCard 
+                key={c.id} 
+                c={chamadoModificado} 
+                userId={userId} 
+                nivel={nivel}
+                onAssumir={assumir} 
+                onFechar={ch => setResolModal(ch)} 
+                onValidar={ch => setAvaliarModal(ch)} 
+                onHistorico={ch => setHistModal(ch)} 
+                onEncaminhar={ch => setEncaminharModal(ch)}
+                onMovimentacoes={handleMovimentacoes}
+                onDevolver={ch => setDevolverModal(ch)} 
+              />
+            );
+          })}
+        </div>
+      )}
+      
+      {/* Modais */}
+      {histModal && <HistoricoModal chamado={histModal} onClose={() => setHistModal(null)} api={api} user={user}/>}
+      {resolModal && <ResolucaoModal chamado={resolModal} onClose={() => setResolModal(null)} onConfirm={txt => fechar(resolModal, txt)} />}
+      {avaliarModal && <AvaliacaoModal chamado={avaliarModal} onClose={() => setAvaliarModal(null)} onConfirm={validar} api={api} />}
+      {encaminharModal && (
+        <EncaminharModal 
+          chamado={encaminharModal} 
+          user={{ id: userId }}
+          api={api}
+          onClose={() => setEncaminharModal(null)} 
+          onConfirm={dados => encaminhar(encaminharModal.id, dados)} 
+        />
+      )}
+      {movimentacoesModal && (
+        <MovimentacoesTecnicasModal 
+          chamado={movimentacoesModal}
+          user={{ id: userId, nivel_acesso: nivel }}
+          api={api}
+          onClose={() => setMovimentacoesModal(null)}
+        />
+      )}
+      {devolverModal && (
+  <DevolverModal 
+    chamado={devolverModal}
+    onClose={() => setDevolverModal(null)} 
+    onConfirm={comentario => devolver(devolverModal.id, comentario)} 
+  />
+)}
+    </div>
+  );
+}
+
+// ── View: Lista de chamados genérica com filtro 
+function ListaChamados({ titulo, chamados,user, userId, nivel, api, onRecarregar, registrarVisualizacao = false, showStatusFilter = false }) {
+  const [histModal, setHistModal] = useState(null);
+  const [resolModal, setResolModal] = useState(null);
+  const [avaliarModal, setAvaliarModal] = useState(null);
+  const [encaminharModal, setEncaminharModal] = useState(null);
+  const [filtroStatus, setFiltroStatus] = useState('TODOS');
+  const [movimentacoesModal, setMovimentacoesModal] = useState(null);
 
   useEffect(() => {
     if (registrarVisualizacao && chamados.length >= 0) {
@@ -1344,35 +2406,188 @@ function ListaChamados({ titulo, chamados, userId, nivel, api, onRecarregar, reg
     onRecarregar(); 
   };
 
+  const handleMovimentacoes = (chamado) => {
+  setMovimentacoesModal(chamado);
+};
+
+  const encaminhar = async (chamadoId, dados) => {
+  try {
+    const response = await api(`/chamados/${chamadoId}/encaminhar`, { 
+      method: 'PUT', 
+      body: JSON.stringify(dados) 
+    });
+    
+    if (response && response.success) {
+      setEncaminharModal(null);
+      onRecarregar();
+    } else {
+      alert('❌ Erro ao encaminhar: ' + (response?.error || 'Erro desconhecido'));
+    }
+  } catch (error) {
+    console.error('Erro ao encaminhar:', error);
+    alert('❌ Erro ao conectar com o servidor');
+  }
+};
+
+  const chamadosFiltrados = filtroStatus === 'TODOS' 
+    ? chamados 
+    : chamados.filter(c => c.status === filtroStatus);
+
+  const statusOptions = [
+    { value: 'TODOS', label: 'Todos', color: 'var(--ink)' },
+    { value: 'ABERTO', label: 'Aberto', color: '#F59E0B' },
+    { value: 'EM ANALISE', label: 'Em Análise', color: '#3B82F6' },
+    { value: 'AGUARDANDO VALIDACAO', label: 'Aguard. Validação', color: '#8B5CF6' },
+    { value: 'CONCLUIDO', label: 'Concluído', color: '#10B981' },
+  ];
+
+  const statusCounts = {
+    TOTAL: chamados.length,
+    ABERTO: chamados.filter(c => c.status === 'ABERTO').length,
+    'EM ANALISE': chamados.filter(c => c.status === 'EM ANALISE').length,
+    'AGUARDANDO VALIDACAO': chamados.filter(c => c.status === 'AGUARDANDO VALIDACAO').length,
+    CONCLUIDO: chamados.filter(c => c.status === 'CONCLUIDO').length,
+  };
+
   return (
     <div>
       <div className="top-bar">
         <h1 className="page-title">{titulo}</h1>
       </div>
-      {chamados.length === 0 ? (
+
+      {showStatusFilter && (
+        <div className="card" style={{ marginBottom: 24, padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--ink)' }}>Filtrar por status:</span>
+            <div className="button-group">
+              {statusOptions.map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => setFiltroStatus(option.value)}
+                  className={`btn btn-outline btn-sm ${filtroStatus === option.value ? 'active' : ''}`}
+                  style={{
+                    background: filtroStatus === option.value ? option.color : 'transparent',
+                    color: filtroStatus === option.value ? 'white' : option.color,
+                    borderColor: option.color,
+                  }}
+                >
+                  {option.label}
+                  {option.value !== 'TODOS' && statusCounts[option.value] > 0 && (
+                    <span style={{
+                      marginLeft: 6,
+                      background: filtroStatus === option.value ? 'rgba(255,255,255,0.2)' : option.color + '20',
+                      padding: '2px 6px',
+                      borderRadius: 12,
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                      color: filtroStatus === option.value ? 'white' : option.color,
+                    }}>
+                      {statusCounts[option.value]}
+                    </span>
+                  )}
+                  {option.value === 'TODOS' && statusCounts.TOTAL > 0 && (
+                    <span style={{
+                      marginLeft: 6,
+                      background: filtroStatus === option.value ? 'rgba(255,255,255,0.2)' : 'var(--line)',
+                      padding: '2px 6px',
+                      borderRadius: 12,
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                    }}>
+                      {statusCounts.TOTAL}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+            
+            {filtroStatus !== 'TODOS' && (
+              <button 
+                className="btn-icon" 
+                onClick={() => setFiltroStatus('TODOS')}
+                title="Limpar filtro"
+                style={{ width: 'auto', padding: '0 12px', borderRadius: 20, gap: 6 }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+                Limpar
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showStatusFilter && filtroStatus !== 'TODOS' && (
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 8, 
+          marginBottom: 16,
+          padding: '8px 12px',
+          background: STATUS_COLOR[filtroStatus] + '10',
+          borderRadius: 12,
+          borderLeft: `3px solid ${STATUS_COLOR[filtroStatus]}`
+        }}>
+          <span>📋 Mostrando apenas chamados com status:</span>
+          <Badge 
+            label={STATUS_LABEL[filtroStatus] || filtroStatus} 
+            color={STATUS_COLOR[filtroStatus] || '#888'} 
+          />
+          <span style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
+            ({chamadosFiltrados.length} de {chamados.length} chamados)
+          </span>
+        </div>
+      )}
+
+      {chamadosFiltrados.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--ink-soft)' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--ink-mute)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--ink-mute)" strokeWidth="1.5">
               <path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
             </svg>
           </div>
-          <p>Nenhum chamado encontrado.</p>
+          <p>Nenhum chamado encontrado{filtroStatus !== 'TODOS' ? ` com status "${STATUS_LABEL[filtroStatus] || filtroStatus}"` : ''}.</p>
         </div>
       ) : (
         <div className="tickets-grid">
-          {chamados.map(c => (
-            <ChamadoCard key={c.id} c={c} userId={userId} nivel={nivel}
+          {chamadosFiltrados.map(c => (
+            <ChamadoCard 
+              key={c.id} 
+              c={c} 
+              userId={userId} 
+              nivel={nivel}
               onAssumir={assumir} 
               onFechar={ch => setResolModal(ch)} 
               onValidar={ch => setAvaliarModal(ch)} 
               onHistorico={ch => setHistModal(ch)} 
+              onEncaminhar={ch => setEncaminharModal(ch)}
+              onMovimentacoes={handleMovimentacoes}
             />
           ))}
         </div>
       )}
-      {histModal  && <HistoricoModal chamado={histModal}  onClose={() => setHistModal(null)}  api={api} />}
+      
+      {histModal  && <HistoricoModal chamado={histModal}  onClose={() => setHistModal(null)}  api={api} user={user} />}
       {resolModal && <ResolucaoModal chamado={resolModal} onClose={() => setResolModal(null)} onConfirm={txt => fechar(resolModal, txt)} />}
       {avaliarModal && <AvaliacaoModal chamado={avaliarModal} onClose={() => setAvaliarModal(null)} onConfirm={validar} api={api} />}
+      {encaminharModal && (
+  <EncaminharModal 
+    chamado={encaminharModal} 
+    user={{ id: userId }}
+    api={api}  
+    onClose={() => setEncaminharModal(null)} 
+    onConfirm={dados => encaminhar(encaminharModal.id, dados)} 
+  />
+)}
+{movimentacoesModal && (
+  <MovimentacoesTecnicasModal 
+    chamado={movimentacoesModal}
+    user={{ id: userId, nivel_acesso: nivel }}
+    api={api}
+    onClose={() => setMovimentacoesModal(null)}
+  />
+)}
     </div>
   );
 }
@@ -1380,6 +2595,7 @@ function ListaChamados({ titulo, chamados, userId, nivel, api, onRecarregar, reg
 // ── View: Gestão de Usuários (MASTER_ADMIN) ───────────────────────────────────
 const CARGOS = [
   { id: 'SOLICITANTE',  label: 'Solicitante',  color: '#F59E0B', desc: 'Pode abrir e acompanhar chamados' },
+  { id: 'SOLICITANTE2', label: 'Solicitante2', color: '#8b5cf6', desc: 'Visualiza todos os chamados, dashboard e pode abrir chamados' },
   { id: 'TECNICO',      label: 'Técnico',      color: '#3B82F6', desc: 'Pode assumir e resolver chamados' },
   { id: 'MASTER_ADMIN', label: 'Master Admin', color: '#8B5CF6', desc: 'Acesso total ao sistema' },
   
@@ -1533,7 +2749,7 @@ function UsuariosView({ api }) {
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
         <input className="input-field" style={{ maxWidth: 280 }} placeholder="Buscar por nome ou e-mail…" value={busca} onChange={e => setBusca(e.target.value)} />
         <div className="button-group">
-          {['TODOS', 'SOLICITANTE', 'TECNICO', 'MASTER_ADMIN'].map(n => {
+          {['TODOS', 'SOLICITANTE','SOLICITANTE2', 'TECNICO', 'MASTER_ADMIN'].map(n => {
             const meta = n === 'TODOS' ? { label: 'Todos', color: 'var(--ink)' } : NIVEL_META[n];
             return <button key={n} className={`btn btn-outline btn-sm${filtroNivel === n ? ' active' : ''}`} onClick={() => setFiltroNivel(n)}>{meta.label}</button>;
           })}
@@ -1972,7 +3188,7 @@ function PerfilModal({ user, onClose, onPerfilAtualizado }) {
 
 // ── App Principal ────────────────────────────────────────────────────────────
 const decodeJwt = (tk) => { try { const payload = JSON.parse(atob(tk.split('.')[1])); if (payload.exp && payload.exp * 1000 < Date.now()) return null; return { id: payload.id, nome: payload.nome, email: payload.email || '', nivel_acesso: payload.nivel_acesso }; } catch { return null; } };
-const PAGE_DEFAULTS = { SOLICITANTE: 'dashboard', TECNICO: 'dashboard', MASTER_ADMIN: 'dashboard' };
+const PAGE_DEFAULTS = { SOLICITANTE: 'dashboard', SOLICITANTE2: 'dashboard', TECNICO: 'dashboard', MASTER_ADMIN: 'dashboard' };
 
 export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
@@ -1990,11 +3206,16 @@ export default function App() {
   }, [token]);
 
   const carregar = useCallback(async () => {
-    const [m, d] = await Promise.all([api('/chamados/meus'), api('/chamados/disponiveis')]);
-    if (m) setMeusChamados(m);
-    if (d) setDisponiveis(d);
-    if (user?.nivel_acesso === 'MASTER_ADMIN') { const t = await api('/chamados/todos'); if (t) setTodos(t); }
-  }, [api, user?.nivel_acesso]);
+  const [m, d, todosChamados] = await Promise.all([
+    api('/chamados/meus'), 
+    api('/chamados/disponiveis'),
+    api('/chamados/todos')  
+  ]);
+  
+  if (m) setMeusChamados(m);
+  if (d) setDisponiveis(d);
+  if (todosChamados) setTodos(todosChamados);
+}, [api]);
 
   useEffect(() => { if (token && user) carregar(); }, [token, user, carregar]);
 
@@ -2007,18 +3228,43 @@ export default function App() {
   const handlePerfilAtualizado = (novoUsuario) => { setUser(novoUsuario); carregar(); };
 
   const renderPagina = () => {
-    switch (pagina) {
-      case 'novo-chamado': return <NovoChamadoView user={user} api={api} onSucesso={() => { carregar(); setPagina(nivel === 'TECNICO' ? 'bandeja' : 'meus-chamados'); }} />;
-      case 'meus-chamados': return <ListaChamados titulo="Meus Chamados" chamados={meusChamados} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} />;
-      case 'bandeja': return <ListaChamados titulo="Bandeja de Chamados" chamados={disponiveis.filter(c => !c.id_responsavel)} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} registrarVisualizacao={true} />;
-      case 'meus-atend': return <ListaChamados titulo="Meus Atendimentos" chamados={disponiveis.filter(c => `${c.id_responsavel}` === `${user.id}`)} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} />;
-      case 'todos-chamados': return <ListaChamados titulo="Todos os Chamados" chamados={todos} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} />;
-      case 'logs-visualizacao': return nivel === 'MASTER_ADMIN' ? <LogsVisualizacaoView api={api} /> : null;
-      case 'dashboard': return <DashboardView api={api} user={user} />;
-      case 'usuarios': return nivel === 'MASTER_ADMIN' ? <UsuariosView api={api} /> : null;
-      default: return null;
-    }
-  };
+  switch (pagina) {
+    case 'novo-chamado': 
+      return <NovoChamadoView user={user} api={api} onSucesso={() => { carregar(); setPagina(nivel === 'TECNICO' ? 'bandeja' : 'meus-chamados'); }} />;
+    
+    case 'meus-chamados': 
+      return <ListaChamados titulo="Meus Chamados" chamados={meusChamados} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} registrarVisualizacao={true}/>;
+    
+    case 'bandeja': 
+      return <ListaChamados titulo="Bandeja de Chamados" chamados={disponiveis.filter(c => !c.id_responsavel)} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} registrarVisualizacao={true} />;
+    
+    case 'meus-atend': 
+      return <MeusAtendimentosView 
+        titulo="Meus Atendimentos" 
+        userId={user.id} 
+        user={user}
+        nivel={nivel} 
+        api={api} 
+        onRecarregar={carregar} 
+        registrarVisualizacao={true}
+      />;
+    
+    case 'todos-chamados': 
+      return <ListaChamados titulo="Todos os Chamados" chamados={todos} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} showStatusFilter={true} user={user} />;
+    
+    case 'logs-visualizacao': 
+      return nivel === 'MASTER_ADMIN' ? <LogsVisualizacaoView api={api} /> : null;
+    
+    case 'dashboard': 
+      return <DashboardView api={api} user={user} />;
+    
+    case 'usuarios': 
+      return nivel === 'MASTER_ADMIN' ? <UsuariosView api={api} /> : null;
+    
+    default: 
+      return null;
+  }
+};
 
   return (
     <>

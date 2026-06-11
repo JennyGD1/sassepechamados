@@ -89,8 +89,9 @@ app.get('/api/chamados/disponiveis', auth, async (req, res) => {
 });
 
 app.get('/api/chamados/todos', auth, async (req, res) => {
-  // Apenas MASTER_ADMIN
-  if (req.userNivel !== 'MASTER_ADMIN') return res.status(403).json({ error: 'Acesso negado' });
+  if (req.userNivel !== 'MASTER_ADMIN' && req.userNivel !== 'SOLICITANTE2' && req.userNivel !== 'TECNICO') {
+    return res.status(403).json({ error: 'Acesso negado' });
+  }
   const { rows } = await db.getAllChamados();
   res.json(rows);
 });
@@ -131,14 +132,39 @@ app.get('/api/chamados/dashboard', auth, async (req, res) => {
 });
 
 app.put('/api/chamados/:id/assumir', auth, async (req, res) => {
+  if (req.userNivel === 'ANALISTA') {
+    return res.status(403).json({ error: 'Analistas não podem assumir chamados' });
+  }
   try {
+    const chamadoResult = await db.getChamadoById(req.params.id);
+    const chamado = chamadoResult.rows[0];
+    
+    const isPrimeiroResponsavel = !chamado.id_responsavel_inicial;
+    
     const { rows } = await db.assignResponsavel(req.params.id, req.userId);
+    
+    if (isPrimeiroResponsavel) {
+      await db.query(
+        `UPDATE chamado_sassepe_chamados 
+         SET id_responsavel_inicial = $1, id_responsavel_final = $1 
+         WHERE id = $2`,
+        [req.userId, req.params.id]
+      );
+    }
+    
     await db.addHistorico(req.params.id, req.userId, 'ATRIBUICAO', `Chamado assumido por ${req.userNome}`);
-    res.json(rows[0]);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    
+    const updatedChamado = await db.getChamadoById(req.params.id);
+    res.json(updatedChamado.rows[0]);
+  } catch (e) { 
+    res.status(500).json({ error: e.message }); 
+  }
 });
 
 app.put('/api/chamados/:id/fechar', auth, async (req, res) => {
+  if (req.userNivel === 'ANALISTA') {
+    return res.status(403).json({ error: 'Analistas não podem resolver chamados' });
+  }
   try {
     const { descricaoResolucao } = req.body;
     const { rows } = await db.closeChamado(req.params.id, new Date());
@@ -168,7 +194,313 @@ app.get('/api/chamados/:id/historico', auth, async (req, res) => {
   const { rows } = await db.getHistorico(req.params.id);
   res.json(rows);
 });
+// ── Editar comentário no histórico geral (apenas MASTER_ADMIN) ────────────────
+app.put('/api/admin/historico/:id', auth, async (req, res) => {
+  if (req.userNivel !== 'MASTER_ADMIN') {
+    return res.status(403).json({ error: 'Acesso negado. Apenas administradores podem editar histórico.' });
+  }
+  
+  try {
+    const { comentario } = req.body;
+    const historicoId = req.params.id;
+    
+    if (!comentario || comentario.trim() === '') {
+      return res.status(400).json({ error: 'Comentário não pode estar vazio' });
+    }
+    
+    // Atualizar diretamente o comentário
+    const query = `
+      UPDATE chamado_sassepe_historico 
+      SET comentario = $1
+      WHERE id = $2
+      RETURNING *
+    `;
+    
+    const result = await db.query(query, [comentario.trim(), historicoId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Histórico não encontrado' });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Comentário atualizado com sucesso',
+      historico: result.rows[0]
+    });
+    
+  } catch (e) {
+    console.error('Erro ao editar histórico:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
 
+// Editar comentário no histórico técnico (apenas MASTER_ADMIN)
+app.put('/api/admin/historico-tecnico/:id', auth, async (req, res) => {
+  if (req.userNivel !== 'MASTER_ADMIN') {
+    return res.status(403).json({ error: 'Acesso negado' });
+  }
+  
+  try {
+    const { comentario } = req.body;
+    const historicoId = req.params.id;
+    
+    if (!comentario || comentario.trim() === '') {
+      return res.status(400).json({ error: 'Comentário não pode estar vazio' });
+    }
+    
+    const query = `
+      UPDATE chamado_sassepe_historico_tecnico 
+      SET comentario = $1
+      WHERE id = $2
+      RETURNING *
+    `;
+    
+    const result = await db.query(query, [comentario.trim(), historicoId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Histórico técnico não encontrado' });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Comentário atualizado com sucesso',
+      historico: result.rows[0]
+    });
+    
+  } catch (e) {
+    console.error('Erro ao editar histórico técnico:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// =====================================================
+// ROTAS DE ENCAMINHAMENTO E DEVOLUÇÃO
+// =====================================================
+
+// 1. Buscar técnicos disponíveis
+app.get('/api/tecnicos/disponiveis', auth, async (req, res) => {
+  try {
+    const { rows } = await db.getTecnicosDisponiveis(req.userId);
+    res.json(rows || []);
+  } catch (e) { 
+    console.error('Erro ao buscar técnicos:', e);
+    res.status(500).json({ error: e.message }); 
+  }
+});
+
+app.put('/api/chamados/:id/encaminhar', auth, async (req, res) => {
+  try {
+    const { paraUsuarioId, comentarioPublico, comentarioPrivado } = req.body;
+    const chamadoId = req.params.id;
+    
+    const chamadoResult = await db.getChamadoById(chamadoId);
+    if (!chamadoResult.rows.length) {
+      return res.status(404).json({ error: 'Chamado não encontrado' });
+    }
+    
+    const chamado = chamadoResult.rows[0];
+
+    if (chamado.id_responsavel !== req.userId && req.userNivel !== 'MASTER_ADMIN') {
+      return res.status(403).json({ error: 'Apenas o responsável atual pode encaminhar' });
+    }
+
+    if (chamado.status !== 'EM ANALISE') {
+      return res.status(400).json({ error: 'Chamado não está em análise' });
+    }
+
+    const destinoResult = await db.getUsuarioById(paraUsuarioId);
+    if (!destinoResult.rows.length || !['TECNICO', 'MASTER_ADMIN'].includes(destinoResult.rows[0].nivel_acesso)) {
+      return res.status(400).json({ error: 'Destino deve ser um técnico' });
+    }
+
+    if (!chamado.id_responsavel_inicial) {
+      await db.query(
+        'UPDATE chamado_sassepe_chamados SET id_responsavel_inicial = $1, id_responsavel_final = $1 WHERE id = $2',
+        [chamado.id_responsavel, chamadoId]
+      );
+    }
+
+    await db.query(
+      'UPDATE chamado_sassepe_chamados SET id_responsavel_anterior = $1 WHERE id = $2',
+      [chamado.id_responsavel, chamadoId]
+    );
+
+    const statusAnterior = chamado.status;
+
+    await db.query(
+      `UPDATE chamado_sassepe_chamados 
+       SET id_responsavel = $1 
+       WHERE id = $2`,
+      [paraUsuarioId, chamadoId]
+    );
+
+    if (comentarioPublico && comentarioPublico.trim()) {
+      await db.addHistoricoTecnico(
+        chamadoId, req.userId, 'ENCAMINHAMENTO',
+        comentarioPublico, 'PUBLICO', req.userId, paraUsuarioId,
+        statusAnterior, 'EM ANALISE'
+      );
+    }
+
+    if (comentarioPrivado && comentarioPrivado.trim()) {
+      await db.addHistoricoTecnico(
+        chamadoId, req.userId, 'COMENTARIO_PRIVADO',
+        comentarioPrivado, 'PRIVADO', req.userId, paraUsuarioId,
+        statusAnterior, 'EM ANALISE'
+      );
+    }
+
+    await db.addHistoricoGeral(
+      chamadoId, req.userId, 'ATRIBUICAO',
+      `Chamado encaminhado de ${req.userNome} para ${destinoResult.rows[0].nome_completo}`
+    );
+    
+    res.json({ success: true, message: 'Chamado encaminhado com sucesso' });
+    
+  } catch (e) { 
+    console.error('Erro no encaminhamento:', e);
+    res.status(500).json({ error: e.message }); 
+  }
+});
+
+app.put('/api/chamados/:id/devolver', auth, async (req, res) => {
+  try {
+    const { comentarioResolucao } = req.body;
+    const chamadoId = req.params.id;
+
+    const chamadoResult = await db.getChamadoById(chamadoId);
+    if (!chamadoResult.rows.length) {
+      return res.status(404).json({ error: 'Chamado não encontrado' });
+    }
+    
+    const chamado = chamadoResult.rows[0];
+
+    if (chamado.id_responsavel !== req.userId) {
+      return res.status(403).json({ error: 'Apenas o responsável atual pode devolver o chamado' });
+    }
+
+    if (!chamado.id_responsavel_final) {
+      return res.status(400).json({ error: 'Nenhum responsável final definido para este chamado' });
+    }
+    
+    const statusAnterior = chamado.status;
+    
+    await db.query(
+      `UPDATE chamado_sassepe_chamados 
+       SET id_responsavel_anterior = $1,
+           id_responsavel = $2
+       WHERE id = $3`,
+      [chamado.id_responsavel, chamado.id_responsavel_final, chamadoId]
+    );
+
+    if (comentarioResolucao) {
+      await db.addHistoricoTecnico(
+        chamadoId, req.userId, 'DEVOLUCAO',
+        comentarioResolucao, 'PUBLICO', req.userId, chamado.id_responsavel_final,
+        statusAnterior, 'EM ANALISE'
+      );
+    }
+    
+    await db.addHistoricoGeral(
+      chamadoId, req.userId, 'DEVOLUCAO',
+      `Técnico ${req.userNome} devolveu o chamado para ${chamado.responsavel_final_nome || 'responsável final'} com a solução: ${comentarioResolucao || 'Solução aplicada'}`
+    );
+    
+    res.json({ success: true, message: 'Chamado devolvido para o responsável final' });
+    
+  } catch (e) {
+    console.error('Erro ao devolver:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/chamados/meus-atendimentos', auth, async (req, res) => {
+  try {
+    const query = `
+      SELECT c.*,
+             u1.nome_completo AS solicitante_nome,
+             u2.nome_completo AS responsavel_nome,
+             u3.nome_completo AS responsavel_inicial_nome,
+             u4.nome_completo AS responsavel_anterior_nome,
+             u5.nome_completo AS responsavel_final_nome
+      FROM chamado_sassepe_chamados c
+      LEFT JOIN chamado_sassepe_usuarios u1 ON c.id_solicitante = u1.id
+      LEFT JOIN chamado_sassepe_usuarios u2 ON c.id_responsavel = u2.id
+      LEFT JOIN chamado_sassepe_usuarios u3 ON c.id_responsavel_inicial = u3.id
+      LEFT JOIN chamado_sassepe_usuarios u4 ON c.id_responsavel_anterior = u4.id
+      LEFT JOIN chamado_sassepe_usuarios u5 ON c.id_responsavel_final = u5.id
+      WHERE c.id_responsavel = $1          -- Sou responsável atual
+         OR c.id_responsavel_inicial = $1  -- Ou fui o primeiro responsável
+      ORDER BY c.data_abertura DESC
+    `;
+    const { rows } = await db.query(query, [req.userId]);
+    res.json(rows);
+  } catch (e) {
+    console.error('Erro ao buscar meus atendimentos:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/chamados/:id/movimentacoes-tecnicas', auth, async (req, res) => {
+  try {
+    const chamadoResult = await db.getChamadoById(req.params.id);
+    if (!chamadoResult.rows.length) {
+      return res.status(404).json({ error: 'Chamado não encontrado' });
+    }
+    
+    const chamado = chamadoResult.rows[0];
+    const isSolicitanteDoChamado = chamado.id_solicitante === req.userId;
+
+    const isTecnicoOuAdmin = req.userNivel === 'TECNICO' || req.userNivel === 'MASTER_ADMIN';
+
+    if (isSolicitanteDoChamado && !isTecnicoOuAdmin) {
+      const query = `
+        SELECT 
+          h.*,
+          u.nome_completo as usuario_nome,
+          u2.nome_completo as de_usuario_nome,
+          u3.nome_completo as para_usuario_nome,
+          to_char(h.data_hora, 'DD/MM/YYYY HH24:MI:SS') as data_hora_formatada
+        FROM chamado_sassepe_historico_tecnico h
+        LEFT JOIN chamado_sassepe_usuarios u ON h.id_usuario = u.id
+        LEFT JOIN chamado_sassepe_usuarios u2 ON h.de_usuario_id = u2.id
+        LEFT JOIN chamado_sassepe_usuarios u3 ON h.para_usuario_id = u3.id
+        WHERE h.id_chamado = $1
+          AND h.tipo_comentario = 'PUBLICO'
+        ORDER BY h.data_hora ASC
+      `;
+      const { rows } = await db.query(query, [req.params.id]);
+      return res.json(rows);
+    }
+    
+
+    const query = `
+      SELECT 
+        h.*,
+        u.nome_completo as usuario_nome,
+        u2.nome_completo as de_usuario_nome,
+        u3.nome_completo as para_usuario_nome,
+        to_char(h.data_hora, 'DD/MM/YYYY HH24:MI:SS') as data_hora_formatada
+      FROM chamado_sassepe_historico_tecnico h
+      LEFT JOIN chamado_sassepe_usuarios u ON h.id_usuario = u.id
+      LEFT JOIN chamado_sassepe_usuarios u2 ON h.de_usuario_id = u2.id
+      LEFT JOIN chamado_sassepe_usuarios u3 ON h.para_usuario_id = u3.id
+      WHERE h.id_chamado = $1
+        AND (
+          h.tipo_comentario = 'PUBLICO'
+          OR h.para_usuario_id = $2
+          OR h.id_usuario = $2
+          OR $3 = 'MASTER_ADMIN'
+        )
+      ORDER BY h.data_hora ASC
+    `;
+    const { rows } = await db.query(query, [req.params.id, req.userId, req.userNivel]);
+    res.json(rows);
+  } catch (e) {
+    console.error('Erro ao buscar movimentações:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
 // ── Usuários (MASTER_ADMIN) ───────────────────────────────────────────────────
 const adminOnly = (req, res, next) => {
   if (req.userNivel !== 'MASTER_ADMIN') return res.status(403).json({ error: 'Acesso negado' });
@@ -185,6 +517,10 @@ app.get('/api/usuarios', auth, adminOnly, async (req, res) => {
 app.post('/api/usuarios', auth, adminOnly, async (req, res) => {
   try {
     const { nome_completo, email, senha, nivel_acesso, ativo = true } = req.body;
+    const niveisPermitidos = ['SOLICITANTE', 'SOLICITANTE2', 'TECNICO', 'MASTER_ADMIN'];
+    if (nivel_acesso && !niveisPermitidos.includes(nivel_acesso)) {
+      return res.status(400).json({ error: 'Nível de acesso inválido' });
+    }
     if (!nome_completo || !email || !senha) return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios.' });
     const senha_hash = await bcrypt.hash(senha, 10);
     const { rows } = await db.createUsuario(
@@ -343,6 +679,24 @@ app.delete('/api/admin/logs-visualizacao', auth, adminOnly, async (req, res) => 
     }
     res.json({ success: true });
   } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/logs/visualizacao-meus-atendimentos', auth, async (req, res) => {
+  try {
+    const { totalChamadosVisiveis, aba } = req.body;
+    
+    // Registrar na mesma tabela de logs de visualização
+    const { rows } = await db.registrarVisualizacaoMeusAtendimentos(
+      req.userId, 
+      totalChamadosVisiveis, 
+      aba || 'meus_atendimentos'
+    );
+    
+    res.json(rows[0]);
+  } catch (e) {
+    console.error('❌ Erro ao registrar visualização:', e);
     res.status(500).json({ error: e.message });
   }
 });
