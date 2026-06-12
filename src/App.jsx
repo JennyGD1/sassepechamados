@@ -1718,13 +1718,16 @@ function AvaliacaoModal({ chamado, onClose, onConfirm, api }) {
     </Modal>
   );
 }
-// ── Card de Chamado 
-function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHistorico, onEncaminhar, onMovimentacoes, onDevolver }) {
+// ── Card de Chamado (modificado - status junto com os outros badges)
+function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHistorico, onEncaminhar, onMovimentacoes, onDevolver, modo = 'default' }) {
   const isMeu       = `${c.id_solicitante}` === `${userId}`;
   const isResp      = `${c.id_responsavel}` === `${userId}`;
   const vencido     = c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO';
-  const podeAssumir = !c.id_responsavel && !isMeu && (nivel === 'TECNICO' || nivel === 'MASTER_ADMIN');
-  const podeEncaminhar = (isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE' && c.id_responsavel;
+  const podeAssumir = !c.id_responsavel && !isMeu && (nivel === 'TECNICO' || nivel === 'MASTER_ADMIN') && modo === 'default';
+  const podeEncaminhar = (isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE' && c.id_responsavel && modo !== 'todos';
+  const podeDevolver = isResp && c.status === 'EM ANALISE' && c.id_responsavel_final && c.id_responsavel_final !== userId && modo !== 'todos';
+  const podeFinalizar = (isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE' && (c.id_responsavel_final === userId || nivel === 'MASTER_ADMIN') && modo !== 'todos';
+  const podeAvaliar = (isMeu && c.status === 'AGUARDANDO VALIDACAO') && modo !== 'todos';
 
   let slaClass = 'sla-ok';
   if (c.status === 'CONCLUIDO') slaClass = 'status-concluido';
@@ -1735,6 +1738,7 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
   }
 
   const statusColor = STATUS_COLOR[c.status] || '#888';
+  const statusLabel = STATUS_LABEL[c.status] || c.status;
 
   const handleAssumir = (e) => { e.stopPropagation(); onAssumir(c.id); };
   const handleFechar = (e) => { e.stopPropagation(); onFechar(c); };
@@ -1744,15 +1748,6 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
     e.stopPropagation(); 
     if (onDevolver) onDevolver(c); 
   };
-
-  const podeFinalizar = (isResp || nivel === 'MASTER_ADMIN') && 
-                        c.status === 'EM ANALISE' && 
-                        (c.id_responsavel_final === userId || nivel === 'MASTER_ADMIN');
-
-  const podeDevolver = isResp && 
-                       c.status === 'EM ANALISE' && 
-                       c.id_responsavel_final && 
-                       c.id_responsavel_final !== userId;
 
   const nomeResponsavel = c.responsavel_inicial_nome || c.responsavel_nome || '—';
   const nomeResponsavelAbrev = nomeResponsavel.split(' ')[0];
@@ -1860,7 +1855,7 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
           </button>
         )}
 
-        {(isMeu && c.status === 'AGUARDANDO VALIDACAO') && (
+        {podeAvaliar && (
           <button 
             className="corner-btn" 
             style={{ 
@@ -1883,7 +1878,7 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
 
       <div className="ticket-header">
         <div className="ticket-id">#{c.numero_chamado}</div>
-        {isResp && c.id_responsavel_final !== userId && c.status === 'EM ANALISE' && (
+        {isResp && c.id_responsavel_final !== userId && c.status === 'EM ANALISE' && modo === 'default' && (
           <span className="badge" style={{ background: '#3B82F620', color: '#3B82F6', fontSize: '9px' }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', marginRight: 3 }}>
               <path d="M12 6v6l4 2"/>
@@ -1894,10 +1889,11 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
         )}
       </div>
 
+      {/* Badges de Status, Criticidade, Complexidade e SLA na mesma linha */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+        <Badge label={statusLabel} color={statusColor} />
         <Badge label={c.criticidade} color={CRIT_COLOR[c.criticidade]} />
         <Badge label={`Compl. ${c.complexidade}`} color="#6B7280" />
-        <Badge label={STATUS_LABEL[c.status] || c.status} color={statusColor} />
         {vencido && <Badge label="SLA Vencido" color="#EF4444" />}
       </div>
 
@@ -2574,6 +2570,7 @@ function ListaChamados({ titulo, chamados, user, userId, nivel, api, onRecarrega
               onHistorico={ch => setHistModal(ch)} 
               onEncaminhar={ch => setEncaminharModal(ch)}
               onMovimentacoes={handleMovimentacoes}
+              modo="todos"
             />
           ))}
         </div>
