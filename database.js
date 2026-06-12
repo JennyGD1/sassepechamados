@@ -98,23 +98,172 @@ export const db = {
     'UPDATE chamado_sassepe_chamados SET status = $1 WHERE id = $2 RETURNING *',
     [status, id]
   ),
-  assignResponsavel: (id, responsavelId) => pool.query(
-    `UPDATE chamado_sassepe_chamados
-     SET id_responsavel = $1, status = 'EM ANALISE'
-     WHERE id = $2 RETURNING *`,
-    [responsavelId, id]
-  ),
-  closeChamado: (id, dataFechamento) => pool.query(
-    `UPDATE chamado_sassepe_chamados
-     SET status = 'AGUARDANDO VALIDACAO', data_fechamento = NOW()
-     WHERE id = $1 RETURNING *`,
-    [id]
-  ),
+ closeChamado: async (id, dataFechamento) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Atualiza status e data de fechamento
+    const result = await client.query(
+      `UPDATE chamado_sassepe_chamados
+       SET status = 'AGUARDANDO VALIDACAO', 
+           data_fechamento = NOW()
+       WHERE id = $1 RETURNING *`,
+      [id]
+    );
+    
+    // PAUSA O SLA - registra quando a pausa começou
+    await client.query(
+      `UPDATE chamado_sassepe_chamados
+       SET pausa_iniciada_em = NOW()
+       WHERE id = $1 AND pausa_iniciada_em IS NULL`,
+      [id]
+    );
+    
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+},
+validarChamado: async (id, aprovado) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const chamado = await client.query(
+      'SELECT id, numero_chamado, status, pausa_iniciada_em, tempo_pausado_segundos, prazo_limite FROM chamado_sassepe_chamados WHERE id = $1',
+      [id]
+    );
+    
+    if (chamado.rows.length === 0) {
+      throw new Error('Chamado não encontrado');
+    }
+    
+    const c = chamado.rows[0];
+    
+    let result;
+    
+    if (aprovado) {
+      result = await client.query(
+        `UPDATE chamado_sassepe_chamados 
+         SET status = 'CONCLUIDO'
+         WHERE id = $1 RETURNING *`,
+        [id]
+      );
+    } else {
+      
+      let tempoPausadoTotal = c.tempo_pausado_segundos || 0;
+      let segundosPausadosNestaValidacao = 0;
+      
+      if (c.pausa_iniciada_em) {
+        const pausaIniciada = new Date(c.pausa_iniciada_em);
+        const agora = new Date();
+        segundosPausadosNestaValidacao = Math.floor((agora - pausaIniciada) / 1000);
+        tempoPausadoTotal += segundosPausadosNestaValidacao;
+        
+      } else {
+      }
+      
+      // SOMA o tempo pausado ao prazo limite (estende o SLA)
+      const prazoOriginal = new Date(c.prazo_limite);
+      const novoPrazo = new Date(prazoOriginal.getTime() + (segundosPausadosNestaValidacao * 1000));
+      
+      // Volta para EM ANALISE, atualiza prazo e limpa pausa
+      result = await client.query(
+        `UPDATE chamado_sassepe_chamados 
+         SET status = 'EM ANALISE',
+             tempo_pausado_segundos = $2,
+             prazo_limite = $3,
+             pausa_iniciada_em = NULL
+         WHERE id = $1 RETURNING *`,
+        [id, tempoPausadoTotal, novoPrazo]
+      );
+      
+    } 
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+},
+
+// Modificar assignResponsavel (assumir chamado)
+assignResponsavel: async (id, responsavelId) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Verifica se é o primeiro responsável
+    const chamado = await client.query(
+      'SELECT id_responsavel_inicial FROM chamado_sassepe_chamados WHERE id = $1',
+      [id]
+    );
+    
+    const isFirstResponsible = !chamado.rows[0]?.id_responsavel_inicial;
+    
+    const result = await client.query(
+      `UPDATE chamado_sassepe_chamados
+       SET id_responsavel = $1, 
+           status = 'EM ANALISE',
+           id_responsavel_inicial = COALESCE(id_responsavel_inicial, $1)
+       WHERE id = $2 RETURNING *`,
+      [responsavelId, id]
+    );
+    
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+},
   finalizeChamado: (id) => pool.query(
     `UPDATE chamado_sassepe_chamados SET status = 'CONCLUIDO' WHERE id = $1 RETURNING *`,
     [id]
   ),
-
+  getSLARestante: async (chamadoId) => {
+  const chamado = await pool.query(
+    `SELECT id, numero_chamado, status, prazo_limite, 
+            tempo_pausado_segundos, pausa_iniciada_em
+     FROM chamado_sassepe_chamados 
+     WHERE id = $1`,
+    [chamadoId]
+  );
+  
+  if (chamado.rows.length === 0) return null;
+  
+  const c = chamado.rows[0];
+  const agora = new Date();
+  let prazoFinal = new Date(c.prazo_limite);
+  let estaPausado = false;
+  
+  if (c.status === 'AGUARDANDO VALIDACAO' && c.pausa_iniciada_em) {
+    estaPausado = true;
+  } else if (c.tempo_pausado_segundos > 0) {
+    prazoFinal = new Date(prazoFinal.getTime());
+  }
+  
+  const estaVencido = !estaPausado && agora > prazoFinal;
+  const tempoRestanteMs = prazoFinal - agora;
+  const tempoRestanteHoras = tempoRestanteMs / (1000 * 60 * 60);
+  
+  return {
+    prazoFinal,
+    estaVencido,
+    estaPausado,
+    tempoRestanteHoras: Math.max(0, tempoRestanteHoras),
+    tempoPausadoTotal: c.tempo_pausado_segundos || 0
+  };
+},
   // Histórico
   addHistorico: (chamadoId, usuarioId, acao, comentario) => pool.query(
     'INSERT INTO chamado_sassepe_historico (id_chamado, id_usuario, acao, comentario, data_hora) VALUES ($1, $2, $3, $4, NOW())',
@@ -210,32 +359,178 @@ export const db = {
     return pool.query(query, [novoResponsavelId, responsavelAnteriorId, chamadoId]);
   },
 
-  // Buscar movimentações técnicas
-  getMovimentacoesTecnicas: async (chamadoId, usuarioId, nivelUsuario) => {
-    const query = `
-      SELECT 
-        h.*,
-        u.nome_completo as usuario_nome,
-        u2.nome_completo as de_usuario_nome,
-        u3.nome_completo as para_usuario_nome,
-        to_char(h.data_hora, 'DD/MM/YYYY HH24:MI:SS') as data_hora_formatada,
-        CASE 
-          WHEN h.tipo_comentario = 'PRIVADO' 
-          AND h.para_usuario_id != $2 
-          AND h.id_usuario != $2 
-          AND $3 NOT IN ('MASTER_ADMIN')
-          THEN true
-          ELSE false
-        END as is_restricted
-      FROM chamado_sassepe_historico_tecnico h
-      LEFT JOIN chamado_sassepe_usuarios u ON h.id_usuario = u.id
-      LEFT JOIN chamado_sassepe_usuarios u2 ON h.de_usuario_id = u2.id
-      LEFT JOIN chamado_sassepe_usuarios u3 ON h.para_usuario_id = u3.id
-      WHERE h.id_chamado = $1
-      ORDER BY h.data_hora ASC
-    `;
-    return pool.query(query, [chamadoId, usuarioId, nivelUsuario]);
-  },
+  // Buscar movimentações técnicas 
+getMovimentacoesTecnicas: async (chamadoId, usuarioId, nivelUsuario) => {
+  const chamadoInfo = await pool.query(
+    `SELECT id_solicitante, id_responsavel_inicial, id_responsavel_final 
+     FROM chamado_sassepe_chamados 
+     WHERE id = $1`,
+    [chamadoId]
+  );
+  
+  const chamado = chamadoInfo.rows[0] || {};
+  const isResponsavelInicial = chamado.id_responsavel_inicial === usuarioId;
+  const isResponsavelFinal = chamado.id_responsavel_final === usuarioId;
+  const isSolicitante = chamado.id_solicitante === usuarioId;
+  const isAdmin = nivelUsuario === 'MASTER_ADMIN';
+  
+  let query = `
+    SELECT 
+      h.*,
+      u.nome_completo as usuario_nome,
+      u2.nome_completo as de_usuario_nome,
+      u3.nome_completo as para_usuario_nome,
+      to_char(h.data_hora, 'DD/MM/YYYY HH24:MI:SS') as data_hora_formatada
+    FROM chamado_sassepe_historico_tecnico h
+    LEFT JOIN chamado_sassepe_usuarios u ON h.id_usuario = u.id
+    LEFT JOIN chamado_sassepe_usuarios u2 ON h.de_usuario_id = u2.id
+    LEFT JOIN chamado_sassepe_usuarios u3 ON h.para_usuario_id = u3.id
+    WHERE h.id_chamado = $1
+  `;
+  
+  const params = [chamadoId];
+  let conditions = [];
+  
+  if (isAdmin) {
+    conditions = [];
+  } 
+  else if (isResponsavelInicial || isResponsavelFinal) {
+    conditions = [
+      `h.tipo_comentario = 'PUBLICO'`,
+      `h.para_usuario_id = $2`,
+      `h.id_usuario = $2`
+    ];
+    params.push(usuarioId);
+  }
+  else if (nivelUsuario === 'TECNICO') {
+    conditions = [
+      `h.tipo_comentario = 'PUBLICO'`,
+      `h.para_usuario_id = $2`,
+      `h.id_usuario = $2`
+    ];
+    params.push(usuarioId);
+  }
+  // Solicitante vê apenas comentários públicos
+  else if (isSolicitante) {
+    conditions = [`h.tipo_comentario = 'PUBLICO'`];
+  }
+  else {
+    conditions = [`h.tipo_comentario = 'PUBLICO'`];
+  }
+  if (conditions.length > 0) {
+    query += ` AND (${conditions.join(' OR ')})`;
+  }
+  query += ` ORDER BY h.data_hora ASC`;
+
+  const { rows } = await pool.query(query, params);
+  return { rows };
+},
+  // Pausar SLA (quando entra em AGUARDANDO VALIDACAO)
+pausarSLA: async (chamadoId) => {
+  const query = `
+    UPDATE chamado_sassepe_chamados 
+    SET pausa_iniciada_em = NOW()
+    WHERE id = $1 AND pausa_iniciada_em IS NULL
+    RETURNING *
+  `;
+  return pool.query(query, [chamadoId]);
+},
+
+// Retomar SLA (quando volta do cliente)
+retomarSLA: async (chamadoId) => {
+  // Primeiro calcula o tempo que ficou pausado
+  const chamado = await pool.query(
+    'SELECT pausa_iniciada_em, tempo_pausado_segundos FROM chamado_sassepe_chamados WHERE id = $1',
+    [chamadoId]
+  );
+  
+  if (chamado.rows.length === 0 || !chamado.rows[0].pausa_iniciada_em) {
+    return { rows: [] };
+  }
+  
+  const pausaIniciada = new Date(chamado.rows[0].pausa_iniciada_em);
+  const agora = new Date();
+  const segundosPausados = Math.floor((agora - pausaIniciada) / 1000);
+  const tempoPausadoTotal = (chamado.rows[0].tempo_pausado_segundos || 0) + segundosPausados;
+  
+  const query = `
+    UPDATE chamado_sassepe_chamados 
+    SET tempo_pausado_segundos = $2,
+        pausa_iniciada_em = NULL
+    WHERE id = $1
+    RETURNING *
+  `;
+  return pool.query(query, [chamadoId, tempoPausadoTotal]);
+},
+
+// Calcular SLA restante considerando tempo pausado
+calcularSLARestante: async (chamadoId) => {
+  const chamado = await pool.query(
+    `SELECT data_abertura, prazo_limite, tempo_pausado_segundos, 
+            pausa_iniciada_em, status
+     FROM chamado_sassepe_chamados 
+     WHERE id = $1`,
+    [chamadoId]
+  );
+  
+  if (chamado.rows.length === 0) return null;
+  
+  const c = chamado.rows[0];
+  const prazoOriginal = new Date(c.prazo_limite);
+  const agora = new Date();
+  
+  // Se está pausado, usa o tempo da pausa como referência
+  let tempoPausado = c.tempo_pausado_segundos || 0;
+  if (c.pausa_iniciada_em && c.status === 'AGUARDANDO VALIDACAO') {
+    const pausaAtual = Math.floor((agora - new Date(c.pausa_iniciada_em)) / 1000);
+    tempoPausado += pausaAtual;
+  }
+  
+  // Adiciona o tempo pausado ao prazo (estende o prazo)
+  const prazoEstendido = new Date(prazoOriginal.getTime() + (tempoPausado * 1000));
+  
+  return {
+    prazoOriginal,
+    prazoEstendido,
+    tempoPausadoSegundos: tempoPausado,
+    tempoPausadoHoras: (tempoPausado / 3600).toFixed(1),
+    estaPausado: !!c.pausa_iniciada_em,
+    estaVencido: agora > prazoEstendido && c.status !== 'CONCLUIDO'
+  };
+},
+
+// Calcular tempo real de trabalho (sem considerar pausas)
+calcularTempoTrabalho: async (chamadoId) => {
+  const chamado = await pool.query(
+    `SELECT data_abertura, data_fechamento, tempo_pausado_segundos,
+            pausa_iniciada_em, status
+     FROM chamado_sassepe_chamados 
+     WHERE id = $1`,
+    [chamadoId]
+  );
+  
+  if (chamado.rows.length === 0) return null;
+  
+  const c = chamado.rows[0];
+  const dataAbertura = new Date(c.data_abertura);
+  const dataFechamento = c.data_fechamento ? new Date(c.data_fechamento) : new Date();
+  let tempoTrabalhado = (dataFechamento - dataAbertura) / 1000; // em segundos
+  
+  // Subtrai tempo pausado
+  let tempoPausado = c.tempo_pausado_segundos || 0;
+  if (c.pausa_iniciada_em && c.status === 'AGUARDANDO VALIDACAO') {
+    const pausaAtual = Math.floor((new Date() - new Date(c.pausa_iniciada_em)) / 1000);
+    tempoPausado += pausaAtual;
+  }
+  
+  tempoTrabalhado -= tempoPausado;
+  
+  return {
+    segundos: Math.max(0, tempoTrabalhado),
+    minutos: Math.max(0, Math.floor(tempoTrabalhado / 60)),
+    horas: Math.max(0, (tempoTrabalhado / 3600).toFixed(1))
+  };
+},
 
   // Buscar notificações não lidas
   getNotificacoesNaoLidas: async (usuarioId) => {

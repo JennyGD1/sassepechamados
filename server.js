@@ -195,42 +195,50 @@ app.get('/api/chamados/:id/historico', auth, async (req, res) => {
   res.json(rows);
 });
 // ── Editar comentário no histórico geral (apenas MASTER_ADMIN) ────────────────
-app.put('/api/admin/historico/:id', auth, async (req, res) => {
-  if (req.userNivel !== 'MASTER_ADMIN') {
-    return res.status(403).json({ error: 'Acesso negado. Apenas administradores podem editar histórico.' });
-  }
-  
+app.put('/api/chamados/:id/validar', auth, async (req, res) => {
   try {
-    const { comentario } = req.body;
-    const historicoId = req.params.id;
+    const { aprovado } = req.body;
+    const chamadoId = req.params.id;
     
-    if (!comentario || comentario.trim() === '') {
-      return res.status(400).json({ error: 'Comentário não pode estar vazio' });
+    // Buscar o chamado atual para ter as informações
+    const chamadoResult = await db.getChamadoById(chamadoId);
+    if (!chamadoResult.rows.length) {
+      return res.status(404).json({ error: 'Chamado não encontrado' });
     }
     
-    // Atualizar diretamente o comentário
-    const query = `
-      UPDATE chamado_sassepe_historico 
-      SET comentario = $1
-      WHERE id = $2
-      RETURNING *
-    `;
+    const chamado = chamadoResult.rows[0];
     
-    const result = await db.query(query, [comentario.trim(), historicoId]);
+    // Usar a função validarChamado do database.js (que já tem a lógica de SLA)
+    const result = await db.validarChamado(chamadoId, aprovado);
     
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Histórico não encontrado' });
+    // Adicionar ao histórico
+    if (aprovado) {
+      await db.addHistorico(
+        chamadoId, req.userId, 'APROVACAO',
+        'Solicitante aprovou a resolução — chamado encerrado'
+      );
+    } else {
+      // Calcular o tempo que ficou pausado para mostrar no histórico
+      let tempoPausado = 0;
+      if (chamado.pausa_iniciada_em) {
+        const pausaIniciada = new Date(chamado.pausa_iniciada_em);
+        const agora = new Date();
+        tempoPausado = Math.floor((agora - pausaIniciada) / 60); // minutos
+      }
+      
+      await db.addHistorico(
+        chamadoId, req.userId, 'RECUSA',
+        `Solicitante recusou a resolução — chamado reaberto${tempoPausado > 0 ? ` com SLA estendido em ${tempoPausado} minutos` : ''}`
+      );
     }
     
-    res.json({ 
-      success: true, 
-      message: 'Comentário atualizado com sucesso',
-      historico: result.rows[0]
-    });
+    // Buscar o chamado atualizado para retornar
+    const chamadoAtualizado = await db.getChamadoById(chamadoId);
+    res.json(chamadoAtualizado.rows[0]);
     
-  } catch (e) {
-    console.error('Erro ao editar histórico:', e);
-    res.status(500).json({ error: e.message });
+  } catch (e) { 
+    console.error('Erro ao validar chamado:', e);
+    res.status(500).json({ error: e.message }); 
   }
 });
 

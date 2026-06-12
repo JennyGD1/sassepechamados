@@ -14,7 +14,7 @@ if (typeof window !== 'undefined' && import.meta.env?.PROD) {
 const PRAZO_HORAS = { Alta: { Alta: 16, Média: 8, Baixa: 4 }, Média: { Alta: 48, Média: 24, Baixa: 12 }, Baixa: { Alta: 72, Média: 48, Baixa: 24 } };
 const CRITICIDADE_INFO = {
   Alta:  { label: 'Indisponibilidade total do sistema',              desc: 'O sistema está completamente fora do ar ou inacessível para todos os usuários.' },
-  Média: { label: 'Falhas parciais ou em módulos secundários',       desc: 'Parte do sistema apresenta falhas, mas a operação principal continua funcionando.' },
+  Média: { label: 'Falhas parciais ou em módulos secundários',       desc: 'Parte docalcularTempoMedioResolucao  sistema apresenta falhas, mas a operação principal continua funcionando.' },
   Baixa: { label: 'Impacto baixo, sem prejuízo imediato à operação', desc: 'Problema de baixo impacto, pode aguardar atendimento dentro do prazo normal.' }
 };
 const STATUS_COLOR = { 'ABERTO': '#F59E0B', 'EM ANALISE': '#3B82F6', 'AGUARDANDO VALIDACAO': '#8B5CF6', 'CONCLUIDO': '#10B981' };
@@ -1688,29 +1688,19 @@ function AvaliacaoModal({ chamado, onClose, onConfirm, api }) {
     <Modal onClose={onClose}>
       <div className="modal-header">
         <h2>Avaliar Resolução</h2>
-        <button className="btn-icon" onClick={onClose}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
+        <button className="btn-icon" onClick={onClose}>✕</button>
       </div>
       <div className="modal-body">
-        <p style={{ color: 'var(--ink-soft)', marginBottom: 12 }}>O técnico registrou a seguinte resolução para o seu chamado:</p>
-        <div className="card" style={{ background: 'var(--paper)', padding: 16, marginBottom: 24, fontStyle: 'italic', color: 'var(--ink)' }}>
+        <p>A solução proposta pelo técnico:</p>
+        <div className="card" style={{ background: 'var(--paper)', padding: 16, marginBottom: 24 }}>
           "{resolucaoText}"
         </div>
-        <p style={{ color: 'var(--ink)', fontWeight: 600, marginBottom: 16 }}>O problema foi resolvido satisfatoriamente?</p>
+        <p style={{ fontWeight: 600, marginBottom: 16 }}>O problema foi resolvido satisfatoriamente?</p>
         <div className="button-group" style={{ justifyContent: 'flex-end' }}>
           <button className="btn btn-danger" onClick={() => onConfirm(chamado.id, false)}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
             Não, Recusar
           </button>
           <button className="btn btn-success" onClick={() => onConfirm(chamado.id, true)}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
             Sim, Aprovar
           </button>
         </div>
@@ -1718,32 +1708,51 @@ function AvaliacaoModal({ chamado, onClose, onConfirm, api }) {
     </Modal>
   );
 }
-// ── Card de Chamado (modificado - status junto com os outros badges)
+// ── Card de Chamado (versão completa com SLA pausado e encaminhamento)
 function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHistorico, onEncaminhar, onMovimentacoes, onDevolver, modo = 'default' }) {
-  const isMeu       = `${c.id_solicitante}` === `${userId}`;
-  const isResp      = `${c.id_responsavel}` === `${userId}`;
-  const vencido     = c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO';
-  const podeAssumir = !c.id_responsavel && !isMeu && (nivel === 'TECNICO' || nivel === 'MASTER_ADMIN') && modo === 'default';
+  const isMeu = String(c.id_solicitante) === String(userId);
+  const isResp = String(c.id_responsavel) === String(userId);
+  
+  // Cálculo do SLA considerando tempo pausado
+  const calcularSLAStatus = () => {
+    if (!c.prazo_limite || c.status === 'CONCLUIDO') {
+      return { vencido: false, prazoEstendido: null, tempoRestante: null };
+    }
+    
+    const prazoOriginal = new Date(c.prazo_limite);
+    const tempoPausadoSegundos = c.tempo_pausado_segundos || 0;
+    const prazoEstendido = new Date(prazoOriginal.getTime() + (tempoPausadoSegundos * 1000));
+    const agora = new Date();
+    const vencido = agora > prazoEstendido;
+    const diffMs = prazoEstendido - agora;
+    const diffHoras = diffMs / (1000 * 60 * 60);
+    
+    return { vencido, prazoEstendido, tempoRestante: diffHoras };
+  };
+  
+  const { vencido, prazoEstendido, tempoRestante } = calcularSLAStatus();
+  
+  const podeAssumir = !c.id_responsavel && !isMeu && (nivel === 'TECNICO' || nivel === 'MASTER_ADMIN');
   const podeEncaminhar = (isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE' && c.id_responsavel && modo !== 'todos';
-  const podeDevolver = isResp && c.status === 'EM ANALISE' && c.id_responsavel_final && c.id_responsavel_final !== userId && modo !== 'todos';
-  const podeFinalizar = (isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE' && (c.id_responsavel_final === userId || nivel === 'MASTER_ADMIN') && modo !== 'todos';
-  const podeAvaliar = (isMeu && c.status === 'AGUARDANDO VALIDACAO') && modo !== 'todos';
+  const podeDevolver = isResp && c.status === 'EM ANALISE' && c.id_responsavel_final && String(c.id_responsavel_final) !== String(userId) && modo !== 'todos';
+  const podeFinalizar = (isResp || nivel === 'MASTER_ADMIN') && c.status === 'EM ANALISE' && (String(c.id_responsavel_final) === String(userId) || nivel === 'MASTER_ADMIN') && modo !== 'todos';
+  const podeAvaliar = isMeu && c.status === 'AGUARDANDO VALIDACAO';
 
   let slaClass = 'sla-ok';
   if (c.status === 'CONCLUIDO') slaClass = 'status-concluido';
   else if (vencido) slaClass = 'sla-vencido';
-  else if (c.prazo_limite) {
-    const diffH = (new Date(c.prazo_limite) - new Date()) / 36e5;
-    if (diffH < 4) slaClass = 'sla-atencao';
+  else if (prazoEstendido) {
+    const diffH = (prazoEstendido - new Date()) / 36e5;
+    if (diffH < 4 && diffH > 0) slaClass = 'sla-atencao';
   }
 
   const statusColor = STATUS_COLOR[c.status] || '#888';
   const statusLabel = STATUS_LABEL[c.status] || c.status;
 
-  const handleAssumir = (e) => { e.stopPropagation(); onAssumir(c.id); };
-  const handleFechar = (e) => { e.stopPropagation(); onFechar(c); };
-  const handleAvaliar = (e) => { e.stopPropagation(); onValidar(c); };
-  const handleEncaminhar = (e) => { e.stopPropagation(); onEncaminhar(c); };
+  const handleAssumir = (e) => { e.stopPropagation(); if (onAssumir) onAssumir(c.id); };
+  const handleFechar = (e) => { e.stopPropagation(); if (onFechar) onFechar(c); };
+  const handleAvaliar = (e) => { e.stopPropagation(); if (onValidar) onValidar(c); };
+  const handleEncaminhar = (e) => { e.stopPropagation(); if (onEncaminhar) onEncaminhar(c); };
   const handleDevolver = (e) => { 
     e.stopPropagation(); 
     if (onDevolver) onDevolver(c); 
@@ -1751,28 +1760,27 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
 
   const nomeResponsavel = c.responsavel_inicial_nome || c.responsavel_nome || '—';
   const nomeResponsavelAbrev = nomeResponsavel.split(' ')[0];
+  
+  const formatarSLA = () => {
+    if (!c.prazo_limite) return '—';
+    if (c.status === 'CONCLUIDO') return fmt(c.prazo_limite);
+    const dataExibicao = prazoEstendido || new Date(c.prazo_limite);
+    return fmt(dataExibicao);
+  };
+  
+  const mostrarIndicadorPausa = c.status === 'AGUARDANDO VALIDACAO' && !vencido;
 
   return (
     <div className={`chamado-card ${slaClass}`}>
       <div className="corner">
-        
-        <button
-          className="corner-btn"
-          title="Histórico"
-          onClick={(e) => { e.stopPropagation(); onHistorico(c); }}
-        >
+        <button className="corner-btn" title="Histórico" onClick={(e) => { e.stopPropagation(); onHistorico(c); }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
             <circle cx="12" cy="12" r="10"/>
             <polyline points="12 6 12 12 16 14"/>
           </svg>
         </button>
 
-        <button
-          className="corner-btn"
-          title="Movimentações Técnicas"
-          onClick={(e) => { e.stopPropagation(); onMovimentacoes(c); }}
-          style={{ background: '#6B7280', color: 'white', borderColor: '#6B7280' }}
-        >
+        <button className="corner-btn" title="Movimentações Técnicas" onClick={(e) => { e.stopPropagation(); onMovimentacoes(c); }} style={{ background: '#6B7280', color: 'white', borderColor: '#6B7280' }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="8" y1="6" x2="21" y2="6"/>
             <line x1="8" y1="12" x2="21" y2="12"/>
@@ -1794,22 +1802,7 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
         )}
 
         {podeEncaminhar && (
-          <button 
-            className="corner-btn" 
-            style={{ 
-              background: '#8B5CF6', 
-              color: 'white', 
-              borderColor: '#8B5CF6',
-              width: 'auto',
-              padding: '0 10px',
-              borderRadius: '15px',
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              gap: '4px'
-            }}
-            title="Encaminhar para outro técnico" 
-            onClick={handleEncaminhar}
-          >
+          <button className="corner-btn" style={{ background: '#8B5CF6', color: 'white', borderColor: '#8B5CF6', width: 'auto', padding: '0 10px', borderRadius: '15px', fontSize: '0.7rem', fontWeight: 600, gap: '4px' }} title="Encaminhar para outro técnico" onClick={handleEncaminhar}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="22" y1="2" x2="11" y2="13"/>
               <polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -1819,22 +1812,7 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
         )}
 
         {podeDevolver && (
-          <button 
-            className="corner-btn" 
-            style={{ 
-              background: '#F59E0B', 
-              color: 'white', 
-              borderColor: '#F59E0B',
-              width: 'auto',
-              padding: '0 10px',
-              borderRadius: '15px',
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              gap: '4px'
-            }}
-            title="Devolver para responsável final" 
-            onClick={handleDevolver}
-          >
+          <button className="corner-btn" style={{ background: '#F59E0B', color: 'white', borderColor: '#F59E0B', width: 'auto', padding: '0 10px', borderRadius: '15px', fontSize: '0.7rem', fontWeight: 600, gap: '4px' }} title="Devolver para responsável final" onClick={handleDevolver}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
               <path d="M3 3v5h5"/>
@@ -1844,11 +1822,7 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
         )}
 
         {podeFinalizar && (
-          <button 
-            className="corner-btn btn-resolve" 
-            title="Enviar para Validação do Cliente" 
-            onClick={handleFechar}
-          >
+          <button className="corner-btn btn-resolve" title="Enviar para Validação do Cliente" onClick={handleFechar}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
@@ -1856,29 +1830,18 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
         )}
 
         {podeAvaliar && (
-          <button 
-            className="corner-btn" 
-            style={{ 
-              width: 'auto', 
-              padding: '0 12px', 
-              borderRadius: '15px', 
-              fontSize: '0.72rem', 
-              fontWeight: 600,
-              background: 'var(--maida-blue)',
-              color: 'white',
-              borderColor: 'var(--maida-blue)'
-            }} 
-            title="Avaliar Resolução" 
-            onClick={handleAvaliar}
-          >
-            Avaliar Resolução
+          <button className="corner-btn" style={{ width: 'auto', padding: '0 12px', borderRadius: '15px', fontSize: '0.72rem', fontWeight: 600, background: 'var(--maida-blue)', color: 'white', borderColor: 'var(--maida-blue)' }} title="Avaliar Resolução" onClick={handleAvaliar}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Avaliar
           </button>
         )}
       </div>
 
       <div className="ticket-header">
         <div className="ticket-id">#{c.numero_chamado}</div>
-        {isResp && c.id_responsavel_final !== userId && c.status === 'EM ANALISE' && modo === 'default' && (
+        {isResp && c.id_responsavel_final && String(c.id_responsavel_final) !== String(userId) && c.status === 'EM ANALISE' && modo === 'default' && (
           <span className="badge" style={{ background: '#3B82F620', color: '#3B82F6', fontSize: '9px' }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', marginRight: 3 }}>
               <path d="M12 6v6l4 2"/>
@@ -1889,12 +1852,20 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
         )}
       </div>
 
-      {/* Badges de Status, Criticidade, Complexidade e SLA na mesma linha */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
         <Badge label={statusLabel} color={statusColor} />
         <Badge label={c.criticidade} color={CRIT_COLOR[c.criticidade]} />
         <Badge label={`Compl. ${c.complexidade}`} color="#6B7280" />
         {vencido && <Badge label="SLA Vencido" color="#EF4444" />}
+        {mostrarIndicadorPausa && (
+          <span className="badge" style={{ background: '#8B5CF620', color: '#8B5CF6', fontSize: '10px', gap: '4px' }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <rect x="6" y="4" width="4" height="16"/>
+              <rect x="14" y="4" width="4" height="16"/>
+            </svg>
+            SLA Pausado
+          </span>
+        )}
       </div>
 
       <div className="ticket-title">
@@ -1909,15 +1880,18 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
         <div style={{ textAlign: 'right' }}>
           <div>
             <strong>Responsável:</strong> {nomeResponsavelAbrev}
-            {c.responsavel_nome && c.responsavel_inicial_nome && 
-             c.responsavel_nome !== c.responsavel_inicial_nome && (
+            {c.responsavel_nome && c.responsavel_inicial_nome && c.responsavel_nome !== c.responsavel_inicial_nome && (
               <span style={{ fontSize: '10px', color: 'var(--ink-faint)', display: 'block' }}>
                 Atual: {c.responsavel_nome?.split(' ')[0]}
               </span>
             )}
           </div>
           <div style={{ fontSize: '11px', color: vencido ? '#EF4444' : 'var(--ink-faint)', marginTop: 2, fontWeight: vencido ? 700 : 400 }}>
-            SLA: {fmt(c.prazo_limite)}
+            SLA: {formatarSLA()}
+            {mostrarIndicadorPausa && tempoRestante > 0 && (
+              <span style={{ display: 'block', fontSize: '9px', color: '#8B5CF6' }}>
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -2988,12 +2962,83 @@ function DashboardView({ api, user }) {
   const [loading, setLoading] = useState(true);
   const [showPicker, setShowPicker] = useState(false);
 
-  const carregar = useCallback(async () => { setLoading(true); const data = await api(`/chamados/dashboard?mes=${competencia.mes}&ano=${competencia.ano}`); if (data) setChamados(data); setLoading(false); }, [api, competencia.mes, competencia.ano]);
-  useEffect(() => { carregar(); }, [carregar]);
+  const carregar = useCallback(async () => { 
+    setLoading(true); 
+    const data = await api(`/chamados/dashboard?mes=${competencia.mes}&ano=${competencia.ano}`); 
+    if (data) setChamados(data); 
+    setLoading(false); 
+  }, [api, competencia.mes, competencia.ano]);
+  
+  useEffect(() => { 
+    carregar(); 
+  }, [carregar]);
 
-  const counts = { total: chamados.length, abertos: chamados.filter(c => c.status === 'ABERTO').length, analise: chamados.filter(c => c.status === 'EM ANALISE').length, validacao: chamados.filter(c => c.status === 'AGUARDANDO VALIDACAO').length, concluido: chamados.filter(c => c.status === 'CONCLUIDO').length, vencidos: chamados.filter(c => c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO').length, alta: chamados.filter(c => c.criticidade === 'Alta').length, media: chamados.filter(c => c.criticidade === 'Média').length, baixa: chamados.filter(c => c.criticidade === 'Baixa').length };
+  const counts = { 
+    total: chamados.length, 
+    abertos: chamados.filter(c => c.status === 'ABERTO').length, 
+    analise: chamados.filter(c => c.status === 'EM ANALISE').length, 
+    validacao: chamados.filter(c => c.status === 'AGUARDANDO VALIDACAO').length, 
+    concluido: chamados.filter(c => c.status === 'CONCLUIDO').length, 
+    vencidos: chamados.filter(c => c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO').length, 
+    alta: chamados.filter(c => c.criticidade === 'Alta').length, 
+    media: chamados.filter(c => c.criticidade === 'Média').length, 
+    baixa: chamados.filter(c => c.criticidade === 'Baixa').length 
+  };
+  
   const taxaConclusao = counts.total > 0 ? Math.round((counts.concluido / counts.total) * 100) : 0;
-  const slaMediaHoras = chamados.filter(c => c.status === 'CONCLUIDO' && c.data_abertura && c.data_fechamento).length > 0 ? Math.round(chamados.filter(c => c.status === 'CONCLUIDO' && c.data_abertura && c.data_fechamento).reduce((acc, c) => acc + (new Date(c.data_fechamento) - new Date(c.data_abertura)) / 3_600_000, 0) / chamados.filter(c => c.status === 'CONCLUIDO' && c.data_abertura && c.data_fechamento).length) : null;
+  
+  // Cálculo do Tempo Médio de Resolução - formatado corretamente
+  const calcularTempoMedio = () => {
+    const chamadosConcluidos = chamados.filter(c => c.status === 'CONCLUIDO' && c.data_fechamento && c.data_abertura);
+    
+    if (chamadosConcluidos.length === 0) return null;
+    
+    let tempoTotalMinutos = 0;
+    let chamadosValidos = 0;
+    
+    chamadosConcluidos.forEach(chamado => {
+      const dataFechamento = new Date(chamado.data_fechamento);
+      const dataAbertura = new Date(chamado.data_abertura);
+      const diffMinutos = (dataFechamento - dataAbertura) / (1000 * 60);
+      
+      if (diffMinutos > 0) {
+        tempoTotalMinutos += diffMinutos;
+        chamadosValidos++;
+      }
+    });
+    
+    if (chamadosValidos === 0) return null;
+    
+    const mediaMinutos = tempoTotalMinutos / chamadosValidos;
+    const mediaHoras = mediaMinutos / 60;
+    
+    // Retorna objeto com horas e minutos
+    const horas = Math.floor(mediaHoras);
+    const minutos = Math.round(mediaMinutos % 60);
+    
+    return { horas, minutos, totalHoras: mediaHoras };
+  };
+  
+  const tempoMedio = calcularTempoMedio();
+  
+  // Formata o texto para exibição
+  const formatarTempoMedio = () => {
+    if (!tempoMedio) return null;
+    
+    if (tempoMedio.totalHoras < 1) {
+      // Menos de 1 hora - mostra em minutos
+      return `${tempoMedio.minutos}min`;
+    } else if (tempoMedio.minutos === 0) {
+      // Hora exata
+      return `${tempoMedio.horas}h`;
+    } else {
+      // Mais de 1 hora com minutos
+      return `${tempoMedio.horas}h ${tempoMedio.minutos}min`;
+    }
+  };
+  
+  const tempoMedioTexto = formatarTempoMedio();
+  const totalConcluidosComData = chamados.filter(c => c.status === 'CONCLUIDO' && c.data_fechamento && c.data_abertura).length;
 
   const labelCompetencia = `${MESES[competencia.mes - 1]}/${competencia.ano}`;
 
@@ -3068,10 +3113,14 @@ function DashboardView({ api, user }) {
                   <div className="stat-number" style={{ color: '#10B981' }}>{counts.baixa}</div>
                   <div className="stat-label">Criticidade Baixa</div>
                 </div>
-                {slaMediaHoras !== null && (
+                {tempoMedioTexto !== null && (
                   <div className="stat-card">
-                    <div className="stat-number" style={{ color: 'var(--maida-blue)' }}>{slaMediaHoras}h</div>
+                    <div className="stat-number" style={{ color: 'var(--maida-blue)' }}>{tempoMedioTexto}</div>
                     <div className="stat-label">Tempo Médio de Resolução</div>
+                    {totalConcluidosComData > 0 && (
+                      <div style={{ fontSize: '0.65rem', color: 'var(--ink-faint)', marginTop: 4 }}>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -3086,8 +3135,7 @@ function DashboardView({ api, user }) {
                     { val: counts.concluido, color: '#10B981', lbl: 'Concluído' }
                   ].filter(s => s.val > 0).map((s, i) => {
                     const percentage = counts.total > 0 ? (s.val / counts.total) * 100 : 0;
-                    const showNumber = percentage >= 8; // Mostra o número se a barra tiver pelo menos 8% de largura
-                    
+                    const showNumber = percentage >= 8;
                     return (
                       <div 
                         key={i} 
@@ -3216,7 +3264,6 @@ function DashboardView({ api, user }) {
     </div>
   );
 }
-
 // ── Modal de Edição de Perfil ─────────────────────────────────────────────────
 function PerfilModal({ user, onClose, onPerfilAtualizado }) {
   const [form, setForm] = useState({ nome_completo: user?.nome || '', email: user?.email || '', senha_atual: '', nova_senha: '', confirmar_nova_senha: '' });
