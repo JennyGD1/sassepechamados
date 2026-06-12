@@ -45,7 +45,6 @@ const G = `
   @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
   :root {
-    /* Brand Colors */
     --maida-blue:        #0070ff;
     --maida-blue-deep:   #004aad;
     --maida-blue-soft:   #e6f0ff;
@@ -55,20 +54,17 @@ const G = `
     --maida-yellow-soft: #fff8d6;
     --maida-dark-blue:   #004aad;
 
-    /* Ink (texto) */
     --ink:        #0a0e1a;
     --ink-soft:   #4a5168;
     --ink-faint:  #8893a8;
     --ink-mute:   #c5cbd6;
 
-    /* Paper (fundos) */
     --paper:      #fafbfd;
     --paper-pure: #ffffff;
     --line:       #eef0f5;
     --line-soft:  #f4f6fa;
     --border-color: #eef0f5;
 
-    /* Rounded */
     --r-sm:   10px;
     --r:      18px;
     --r-lg:   26px;
@@ -76,7 +72,6 @@ const G = `
     --r-full: 9999px;
     --radius: 18px;
 
-    /* Shadows */
     --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
     --shadow:    0 4px 12px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
     --shadow-md: 0 8px 20px -4px rgba(15, 23, 42, 0.08);
@@ -84,7 +79,6 @@ const G = `
     --shadow-pink: 0 12px 32px -8px rgba(255, 0, 115, 0.30);
     --shadow-blue: 0 12px 32px -8px rgba(0, 112, 255, 0.28);
 
-    /* Motion */
     --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     --transition:  all 0.2s var(--ease-out);
@@ -105,7 +99,6 @@ const G = `
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Mesh decorativo no fundo */
   body::before {
     content: '';
     position: fixed;
@@ -125,7 +118,6 @@ const G = `
     color: var(--ink);
   }
 
-  /* Scrollbar */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #d6dce6; border-radius: 4px; }
@@ -133,10 +125,8 @@ const G = `
 
   ::selection { background: var(--maida-blue); color: white; }
 
-  /* Layout */
   .app-layout { display: flex; min-height: 100vh; position: relative; z-index: 1; }
 
-  /* Sidebar */
   .sidebar {
     width: 280px;
     background: var(--paper-pure);
@@ -268,7 +258,6 @@ const G = `
     text-transform: uppercase;
   }
 
-  /* Main Content */
   .main-content {
     margin-left: 280px;
     flex: 1;
@@ -281,7 +270,6 @@ const G = `
     height: 100vh;
   }
 
-  /* Top Bar */
   .top-bar {
     display: flex;
     justify-content: space-between;
@@ -302,7 +290,6 @@ const G = `
     margin: 0;
   }
 
-  /* Buttons - Enhanced Styling */
   .btn {
     display: inline-flex;
     align-items: center;
@@ -444,7 +431,6 @@ const G = `
     transform: none;
   }
 
-  /* Cards */
   .card {
     background: var(--paper-pure);
     padding: 24px;
@@ -454,7 +440,6 @@ const G = `
     box-shadow: var(--shadow-sm);
   }
 
-  /* Stats Grid */
   .stat-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -508,7 +493,6 @@ const G = `
   .stat-number { font-family: 'Bricolage Grotesque'; font-size: 2.2rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; color: var(--ink); margin-bottom: 3px; }
   .stat-label { color: var(--ink-soft); font-size: 0.85rem; font-weight: 500; margin: 0; }
 
-  /* Ticket Cards com Corner Cutout */
   .tickets-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -533,7 +517,6 @@ const G = `
 
   .chamado-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 
-  /* Faixa lateral de status */
   .chamado-card::after {
     content: '';
     position: absolute;
@@ -552,7 +535,6 @@ const G = `
   .chamado-card.sla-atencao { --accent: #d49500; --corner-bg: #fffbee; }
   .chamado-card.status-concluido { --accent: #16a34a; --corner-bg: #f0fdf4; }
 
-  /* Corner Cutout */
   .chamado-card .corner {
     position: absolute;
     top: 0;
@@ -593,7 +575,6 @@ const G = `
     pointer-events: none;
   }
 
-  /* Corner buttons */
   .corner-btn {
     width: 30px;
     height: 30px;
@@ -627,7 +608,6 @@ const G = `
   .corner-btn.btn-approve { background: #10B981; color: white; border-color: #10B981; }
   .corner-btn.btn-reject  { background: #EF4444; color: white; border-color: #EF4444; }
 
-  /* Conteúdo do card */
   .chamado-card .ticket-header {
     display: flex;
     justify-content: space-between;
@@ -687,7 +667,6 @@ const G = `
     font-size: 12px;
   }
 
-  /* Inputs */
   .input-field {
     width: 100%;
     padding: 12px 16px;
@@ -715,7 +694,6 @@ const G = `
     color: var(--ink-soft);
   }
 
-  /* Modais */
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -760,20 +738,17 @@ const G = `
 
   .modal-body { flex: 1; overflow-y: auto; padding: 24px 26px; }
 
-  /* Button group */
   .button-group {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
   }
 
-  /* Animations */
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
   }
 
-  /* Responsive */
   @media (max-width: 1024px) {
     .sidebar {
       position: fixed;
@@ -1143,7 +1118,11 @@ function MovimentacoesTecnicasModal({ chamado, onClose, api, user }) {
       <Modal onClose={onClose}>
         <div className="modal-header">
           <h2>Erro</h2>
-          <button className="btn-icon" onClick={onClose}>✕</button>
+          <button className="btn-icon" onClick={onClose}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
         <div className="modal-body">
           <div className="card" style={{ textAlign: 'center', padding: 40, color: '#EF4444' }}>
@@ -1161,7 +1140,11 @@ function MovimentacoesTecnicasModal({ chamado, onClose, api, user }) {
           <div className="label">Movimentações Técnicas</div>
           <h2>{chamado.numero_chamado}</h2>
         </div>
-        <button className="btn-icon" onClick={onClose}>✕</button>
+        <button className="btn-icon" onClick={onClose}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
       <div className="modal-body">
         <div className="card" style={{ padding: 12, marginBottom: 20, background: 'var(--paper)' }}>
@@ -1450,7 +1433,6 @@ function EncaminharModal({ chamado, onClose, onConfirm, user, api }) {
         </button>
       </div>
       <div className="modal-body">
-        {/* Informação do chamado */}
         <div className="card" style={{ padding: 12, marginBottom: 20, background: 'var(--paper)' }}>
           <div><strong>Chamado:</strong> #{chamado.numero_chamado}</div>
           <div style={{ fontSize: '.8rem', marginTop: 4, color: 'var(--ink-soft)' }}>
@@ -1469,7 +1451,12 @@ function EncaminharModal({ chamado, onClose, onConfirm, user, api }) {
             borderLeft: '3px solid #EF4444',
             color: '#991B1B'
           }}>
-            <strong>❌ {erro}</strong>
+            <strong>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ display: 'inline', marginRight: 6 }}>
+                <circle cx="12" cy="12" r="10"/><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              {erro}
+            </strong>
           </div>
         )}
 
@@ -1503,7 +1490,10 @@ function EncaminharModal({ chamado, onClose, onConfirm, user, api }) {
               color: '#92400E',
               textAlign: 'center'
             }}>
-              ⚠️ Nenhum técnico disponível no momento.
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', marginRight: 6 }}>
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              Nenhum técnico disponível no momento.
             </div>
           ) : (
             <select 
@@ -1540,7 +1530,13 @@ function EncaminharModal({ chamado, onClose, onConfirm, user, api }) {
                     transition: 'all 0.2s'
                   }}
                 >
-                  <div style={{ fontSize: '1.2rem' }}>🌐</div>
+                  <div style={{ fontSize: '1.2rem' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="5" y="11" width="14" height="11" rx="2" ry="2"/>
+                      <path d="M8 11V7a4 4 0 0 1 6.5-3.5" strokeLinecap="round"/>
+                      <line x1="12" y1="15" x2="12" y2="17"/>
+                    </svg>
+                  </div>
                   <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Público</div>
                   <small style={{ fontSize: '0.7rem', color: 'var(--ink-soft)' }}>Todos veem</small>
                 </button>
@@ -1557,14 +1553,17 @@ function EncaminharModal({ chamado, onClose, onConfirm, user, api }) {
                     transition: 'all 0.2s'
                   }}
                 >
-                  <div style={{ fontSize: '1.2rem' }}>🔒</div>
+                  <div style={{ fontSize: '1.2rem' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="5" y="11" width="14" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                  </div>
                   <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Privado</div>
                   <small style={{ fontSize: '0.7rem', color: 'var(--ink-soft)' }}>Só o destino</small>
                 </button>
               </div>
             </div>
 
-            {/* Comentário */}
             <div style={{ marginBottom: 20 }}>
               <label className="label">
                 {tipoComentario === 'PUBLICO' ? 'Comentário Público' : 'Comentário Privado'}
@@ -1587,14 +1586,16 @@ function EncaminharModal({ chamado, onClose, onConfirm, user, api }) {
                 marginTop: 8,
                 fontSize: '0.7rem'
               }}>
-                {tipoComentario === 'PUBLICO' ? '✅' : '🔒'} 
+                {tipoComentario === 'PUBLICO' ? 
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> :
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="5" y="11" width="14" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                }
                 {tipoComentario === 'PUBLICO' 
                   ? 'Este comentário será visível para todos os usuários do sistema' 
                   : `Apenas ${tecnicoSelecionadoObj?.nome_completo || 'o técnico destino'} poderá ver este comentário`}
               </small>
             </div>
 
-            {/* Preview */}
             {comentario && (
               <div className="card" style={{ 
                 padding: 12, 
@@ -1603,7 +1604,11 @@ function EncaminharModal({ chamado, onClose, onConfirm, user, api }) {
                 borderLeft: `3px solid ${tipoComentario === 'PUBLICO' ? '#10B981' : '#8B5CF6'}`
               }}>
                 <div style={{ fontSize: '.75rem', fontWeight: 600, marginBottom: 8 }}>
-                  📋 Resumo do encaminhamento:
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', marginRight: 4 }}>
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  Resumo do encaminhamento:
                 </div>
                 <div style={{ fontSize: '.75rem', marginBottom: 4 }}>
                   <strong>Destino:</strong> {tecnicoSelecionadoObj?.nome_completo}
@@ -1671,7 +1676,6 @@ function AvaliacaoModal({ chamado, onClose, onConfirm, api }) {
   useEffect(() => {
     api(`/chamados/${chamado.id}/historico`).then(d => {
       if (d) {
-        // Encontra a ação 'RESOLUCAO' mais recente
         const resEntry = d.sort((a, b) => new Date(b.data_hora) - new Date(a.data_hora))
                           .find(h => h.acao === 'RESOLUCAO');
         if (resEntry) setResolucaoText(resEntry.comentario);
@@ -1755,10 +1759,8 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
 
   return (
     <div className={`chamado-card ${slaClass}`}>
-      {/* Corner cutout com botões */}
       <div className="corner">
         
-        {/* BOTÃO DE HISTÓRICO */}
         <button
           className="corner-btn"
           title="Histórico"
@@ -1883,7 +1885,11 @@ function ChamadoCard({ c, userId, nivel, onAssumir, onFechar, onValidar, onHisto
         <div className="ticket-id">#{c.numero_chamado}</div>
         {isResp && c.id_responsavel_final !== userId && c.status === 'EM ANALISE' && (
           <span className="badge" style={{ background: '#3B82F620', color: '#3B82F6', fontSize: '9px' }}>
-            🔧 Responsável Atual
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', marginRight: 3 }}>
+              <path d="M12 6v6l4 2"/>
+              <circle cx="12" cy="12" r="10"/>
+            </svg>
+            Responsável Atual
           </span>
         )}
       </div>
@@ -1961,7 +1967,12 @@ function LoginScreen({ onLogin }) {
               <input className="input-field" type="password" required autoComplete="current-password"
                 value={data.senha} onChange={e => setData({ ...data, senha: e.target.value })} placeholder="••••••••" />
             </div>
-            {erro && <div style={{ color: '#EF4444', fontSize: '.875rem', marginBottom: 16, padding: '10px 14px', background: '#FEF2F2', borderRadius: 8 }}>{erro}</div>}
+            {erro && <div style={{ color: '#EF4444', fontSize: '.875rem', marginBottom: 16, padding: '10px 14px', background: '#FEF2F2', borderRadius: 8 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ display: 'inline', marginRight: 6 }}>
+                <circle cx="12" cy="12" r="10"/><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              {erro}
+            </div>}
             <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: 13 }} disabled={loading} type="submit">
               {loading ? 'Entrando…' : 'Entrar'}
             </button>
@@ -2150,7 +2161,7 @@ function NovoChamadoView({ user, api, onSucesso }) {
   );
 }
 // ── View: Meus Atendimentos 
-function MeusAtendimentosView({ titulo, userId, nivel, api, onRecarregar, registrarVisualizacao = true }) {
+function MeusAtendimentosView({ titulo, userId, nivel, api, onRecarregar, registrarVisualizacao = true, user }) {
   const [chamados, setChamados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [histModal, setHistModal] = useState(null);
@@ -2234,25 +2245,24 @@ function MeusAtendimentosView({ titulo, userId, nivel, api, onRecarregar, regist
   };
 
   const devolver = async (chamadoId, comentario) => {
-  try {
-    const response = await api(`/chamados/${chamadoId}/devolver`, { 
-      method: 'PUT', 
-      body: JSON.stringify({ comentarioResolucao: comentario }) 
-    });
-    if (response && response.success) {
-      setDevolverModal(null);
-      carregarMeusAtendimentos();
-      onRecarregar();
-    } else {
-      alert('❌ Erro ao devolver: ' + (response?.error || 'Erro desconhecido'));
+    try {
+      const response = await api(`/chamados/${chamadoId}/devolver`, { 
+        method: 'PUT', 
+        body: JSON.stringify({ comentarioResolucao: comentario }) 
+      });
+      if (response && response.success) {
+        setDevolverModal(null);
+        carregarMeusAtendimentos();
+        onRecarregar();
+      } else {
+        alert('❌ Erro ao devolver: ' + (response?.error || 'Erro desconhecido'));
+      }
+    } catch (error) {
+      console.error('Erro ao devolver:', error);
+      alert('❌ Erro ao conectar com o servidor');
     }
-  } catch (error) {
-    console.error('Erro ao devolver:', error);
-    alert('❌ Erro ao conectar com o servidor');
-  }
-};
+  };
 
-  // Filtrar por status
   const chamadosFiltrados = filtroStatus === 'TODOS' 
     ? chamados 
     : chamados.filter(c => c.status === filtroStatus);
@@ -2281,7 +2291,6 @@ function MeusAtendimentosView({ titulo, userId, nivel, api, onRecarregar, regist
         <h1 className="page-title">{titulo}</h1>
       </div>
 
-      {/* Filtro de Status */}
       <div className="card" style={{ marginBottom: 24, padding: '16px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--ink)' }}>Filtrar por status:</span>
@@ -2323,10 +2332,9 @@ function MeusAtendimentosView({ titulo, userId, nivel, api, onRecarregar, regist
       ) : (
         <div className="tickets-grid">
           {chamadosFiltrados.map(c => {
-            // Determinar qual nome mostrar no card (responsável inicial)
             const chamadoModificado = {
               ...c,
-              responsavel_nome: c.responsavel_inicial_nome || c.responsavel_nome // Mostra o inicial no card
+              responsavel_nome: c.responsavel_inicial_nome || c.responsavel_nome
             };
             return (
               <ChamadoCard 
@@ -2347,7 +2355,6 @@ function MeusAtendimentosView({ titulo, userId, nivel, api, onRecarregar, regist
         </div>
       )}
       
-      {/* Modais */}
       {histModal && <HistoricoModal chamado={histModal} onClose={() => setHistModal(null)} api={api} user={user}/>}
       {resolModal && <ResolucaoModal chamado={resolModal} onClose={() => setResolModal(null)} onConfirm={txt => fechar(resolModal, txt)} />}
       {avaliarModal && <AvaliacaoModal chamado={avaliarModal} onClose={() => setAvaliarModal(null)} onConfirm={validar} api={api} />}
@@ -2369,18 +2376,18 @@ function MeusAtendimentosView({ titulo, userId, nivel, api, onRecarregar, regist
         />
       )}
       {devolverModal && (
-  <DevolverModal 
-    chamado={devolverModal}
-    onClose={() => setDevolverModal(null)} 
-    onConfirm={comentario => devolver(devolverModal.id, comentario)} 
-  />
-)}
+        <DevolverModal 
+          chamado={devolverModal}
+          onClose={() => setDevolverModal(null)} 
+          onConfirm={comentario => devolver(devolverModal.id, comentario)} 
+        />
+      )}
     </div>
   );
 }
 
 // ── View: Lista de chamados genérica com filtro 
-function ListaChamados({ titulo, chamados,user, userId, nivel, api, onRecarregar, registrarVisualizacao = false, showStatusFilter = false }) {
+function ListaChamados({ titulo, chamados, user, userId, nivel, api, onRecarregar, registrarVisualizacao = false, showStatusFilter = false }) {
   const [histModal, setHistModal] = useState(null);
   const [resolModal, setResolModal] = useState(null);
   const [avaliarModal, setAvaliarModal] = useState(null);
@@ -2407,27 +2414,27 @@ function ListaChamados({ titulo, chamados,user, userId, nivel, api, onRecarregar
   };
 
   const handleMovimentacoes = (chamado) => {
-  setMovimentacoesModal(chamado);
-};
+    setMovimentacoesModal(chamado);
+  };
 
   const encaminhar = async (chamadoId, dados) => {
-  try {
-    const response = await api(`/chamados/${chamadoId}/encaminhar`, { 
-      method: 'PUT', 
-      body: JSON.stringify(dados) 
-    });
-    
-    if (response && response.success) {
-      setEncaminharModal(null);
-      onRecarregar();
-    } else {
-      alert('❌ Erro ao encaminhar: ' + (response?.error || 'Erro desconhecido'));
+    try {
+      const response = await api(`/chamados/${chamadoId}/encaminhar`, { 
+        method: 'PUT', 
+        body: JSON.stringify(dados) 
+      });
+      
+      if (response && response.success) {
+        setEncaminharModal(null);
+        onRecarregar();
+      } else {
+        alert('❌ Erro ao encaminhar: ' + (response?.error || 'Erro desconhecido'));
+      }
+    } catch (error) {
+      console.error('Erro ao encaminhar:', error);
+      alert('❌ Erro ao conectar com o servidor');
     }
-  } catch (error) {
-    console.error('Erro ao encaminhar:', error);
-    alert('❌ Erro ao conectar com o servidor');
-  }
-};
+  };
 
   const chamadosFiltrados = filtroStatus === 'TODOS' 
     ? chamados 
@@ -2529,7 +2536,11 @@ function ListaChamados({ titulo, chamados,user, userId, nivel, api, onRecarregar
           borderRadius: 12,
           borderLeft: `3px solid ${STATUS_COLOR[filtroStatus]}`
         }}>
-          <span>📋 Mostrando apenas chamados com status:</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22 6 12 13 2 6"/>
+          </svg>
+          <span>Mostrando apenas chamados com status:</span>
           <Badge 
             label={STATUS_LABEL[filtroStatus] || filtroStatus} 
             color={STATUS_COLOR[filtroStatus] || '#888'} 
@@ -2572,22 +2583,22 @@ function ListaChamados({ titulo, chamados,user, userId, nivel, api, onRecarregar
       {resolModal && <ResolucaoModal chamado={resolModal} onClose={() => setResolModal(null)} onConfirm={txt => fechar(resolModal, txt)} />}
       {avaliarModal && <AvaliacaoModal chamado={avaliarModal} onClose={() => setAvaliarModal(null)} onConfirm={validar} api={api} />}
       {encaminharModal && (
-  <EncaminharModal 
-    chamado={encaminharModal} 
-    user={{ id: userId }}
-    api={api}  
-    onClose={() => setEncaminharModal(null)} 
-    onConfirm={dados => encaminhar(encaminharModal.id, dados)} 
-  />
-)}
-{movimentacoesModal && (
-  <MovimentacoesTecnicasModal 
-    chamado={movimentacoesModal}
-    user={{ id: userId, nivel_acesso: nivel }}
-    api={api}
-    onClose={() => setMovimentacoesModal(null)}
-  />
-)}
+        <EncaminharModal 
+          chamado={encaminharModal} 
+          user={{ id: userId }}
+          api={api}  
+          onClose={() => setEncaminharModal(null)} 
+          onConfirm={dados => encaminhar(encaminharModal.id, dados)} 
+        />
+      )}
+      {movimentacoesModal && (
+        <MovimentacoesTecnicasModal 
+          chamado={movimentacoesModal}
+          user={{ id: userId, nivel_acesso: nivel }}
+          api={api}
+          onClose={() => setMovimentacoesModal(null)}
+        />
+      )}
     </div>
   );
 }
@@ -2633,7 +2644,12 @@ function UsuarioModal({ usuario, onClose, onSalvar }) {
         </button>
       </div>
       <div className="modal-body">
-        {erro && <div className="card" style={{ background: '#FEF2F2', color: '#EF4444', marginBottom: 16 }}>{erro}</div>}
+        {erro && <div className="card" style={{ background: '#FEF2F2', color: '#EF4444', marginBottom: 16 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ display: 'inline', marginRight: 6 }}>
+            <circle cx="12" cy="12" r="10"/><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          {erro}
+        </div>}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
           <div style={{ gridColumn: '1/-1' }}>
             <label className="label">Nome Completo *</label>
@@ -2803,7 +2819,9 @@ function UsuariosView({ api }) {
       {modal && <UsuarioModal usuario={modal === 'novo' ? null : modal} onClose={() => setModal(null)} onSalvar={salvar} />}
       {confirmDel && (
         <Modal onClose={() => setConfirmDel(null)}>
-          <div className="modal-header"><h2>Excluir Usuário</h2><button className="btn-icon" onClick={() => setConfirmDel(null)}>✕</button></div>
+          <div className="modal-header"><h2>Excluir Usuário</h2><button className="btn-icon" onClick={() => setConfirmDel(null)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button></div>
           <div className="modal-body">
             <p>Tem certeza que deseja excluir <strong>{confirmDel.nome_completo}</strong>? Esta ação não pode ser desfeita.</p>
             <div className="button-group" style={{ justifyContent: 'flex-end', marginTop: 20 }}>
@@ -2945,7 +2963,9 @@ function LogsVisualizacaoView({ api }) {
       )}
       {confirmDelete && (
         <Modal onClose={() => setConfirmDelete(null)}>
-          <div className="modal-header"><h2>{confirmDelete.type === 'all' ? 'Limpar Todos os Logs' : confirmDelete.type === 'user' ? `Excluir Logs de ${confirmDelete.nome}` : 'Excluir Log'}</h2><button className="btn-icon" onClick={() => setConfirmDelete(null)}>✕</button></div>
+          <div className="modal-header"><h2>{confirmDelete.type === 'all' ? 'Limpar Todos os Logs' : confirmDelete.type === 'user' ? `Excluir Logs de ${confirmDelete.nome}` : 'Excluir Log'}</h2><button className="btn-icon" onClick={() => setConfirmDelete(null)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button></div>
           <div className="modal-body">
             <p>{confirmDelete.type === 'all' && 'Tem certeza que deseja excluir TODOS os logs?'}{confirmDelete.type === 'user' && `Tem certeza que deseja excluir todos os logs do usuário "${confirmDelete.nome}"?`}{confirmDelete.type === 'single' && 'Tem certeza que deseja excluir este log?'}</p>
             <div className="button-group" style={{ justifyContent: 'flex-end', marginTop: 20 }}>
@@ -2959,7 +2979,6 @@ function LogsVisualizacaoView({ api }) {
   );
 }
 
-// ── View: Dashboard (Estilo iMaida) ─────────────────────────────────────────
 // ── View: Dashboard (Estilo iMaida) ─────────────────────────────────────────
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 function gerarCompetencias() { const now = new Date(); const lista = []; for (let i = 11; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); lista.push({ mes: d.getMonth() + 1, ano: d.getFullYear(), label: `${MESES[d.getMonth()]}/${d.getFullYear()}` }); } return lista.reverse(); }
@@ -2987,7 +3006,10 @@ function DashboardView({ api, user }) {
         <h1 className="page-title">Dashboard</h1>
         <div style={{ position: 'relative' }}>
           <button className="btn btn-secondary" onClick={() => setShowPicker(v => !v)}>
-            {labelCompetencia} ▾
+            {labelCompetencia} 
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 6 }}>
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
           </button>
           {showPicker && (
             <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200, background: 'var(--paper-pure)', border: '1px solid var(--line)', borderRadius: 14, boxShadow: 'var(--shadow-lg)', padding: '8px 0', minWidth: 200, maxHeight: 260, overflowY: 'auto' }}>
@@ -3008,9 +3030,12 @@ function DashboardView({ api, user }) {
         <>
           {counts.vencidos > 0 && user?.nivel_acesso !== 'SOLICITANTE' && (
             <div className="card" style={{ background: '#FEF2F2', borderColor: '#FECACA', color: '#991B1B', marginBottom: 20 }}>
-                <strong>{counts.vencidos} chamado(s)</strong> com SLA vencido.
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', marginRight: 6 }}>
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <strong>{counts.vencidos} chamado(s)</strong> com SLA vencido.
             </div>
-            )}
+          )}
           {counts.total === 0 ? <div className="card" style={{ textAlign: 'center' }}>Nenhum chamado encontrado em {labelCompetencia}.</div> : (
             <>
               <div className="stat-grid">
@@ -3056,15 +3081,77 @@ function DashboardView({ api, user }) {
 
               <div className="card">
                 <h3 style={{ marginBottom: 16 }}>Distribuição por Status</h3>
-                <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', height: 28, gap: 2 }}>
+                <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', height: 32, gap: 2 }}>
+                  {[
+                    { val: counts.abertos, color: '#F59E0B', lbl: 'Aberto' }, 
+                    { val: counts.analise, color: '#3B82F6', lbl: 'Em Análise' }, 
+                    { val: counts.validacao, color: '#8B5CF6', lbl: 'Aguard. Validação' }, 
+                    { val: counts.concluido, color: '#10B981', lbl: 'Concluído' }
+                  ].filter(s => s.val > 0).map((s, i) => {
+                    const percentage = counts.total > 0 ? (s.val / counts.total) * 100 : 0;
+                    const showNumber = percentage >= 8; // Mostra o número se a barra tiver pelo menos 8% de largura
+                    
+                    return (
+                      <div 
+                        key={i} 
+                        title={`${s.lbl}: ${s.val} (${Math.round(percentage)}%)`} 
+                        style={{ 
+                          flex: s.val, 
+                          background: s.color, 
+                          borderRadius: 4, 
+                          minWidth: 32,
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          color: '#fff', 
+                          fontSize: '.75rem', 
+                          fontWeight: 700,
+                          position: 'relative',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        {showNumber ? `${s.val}` : 
+                          <span style={{ 
+                            position: 'absolute', 
+                            bottom: -22, 
+                            left: '50%', 
+                            transform: 'translateX(-50%)',
+                            fontSize: '.65rem',
+                            color: s.color,
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap',
+                            background: 'white',
+                            padding: '2px 6px',
+                            borderRadius: 12,
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                          }}>
+                            {s.val}
+                          </span>
+                        }
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ 
+                  display: 'flex', 
+                  flexWrap: 'wrap', 
+                  gap: 16, 
+                  marginTop: 24, 
+                  paddingTop: 16, 
+                  borderTop: '1px solid var(--line)',
+                  justifyContent: 'center'
+                }}>
                   {[
                     { val: counts.abertos, color: '#F59E0B', lbl: 'Aberto' }, 
                     { val: counts.analise, color: '#3B82F6', lbl: 'Em Análise' }, 
                     { val: counts.validacao, color: '#8B5CF6', lbl: 'Aguard. Validação' }, 
                     { val: counts.concluido, color: '#10B981', lbl: 'Concluído' }
                   ].filter(s => s.val > 0).map((s, i) => (
-                    <div key={i} title={`${s.lbl}: ${s.val}`} style={{ flex: s.val, background: s.color, borderRadius: 4, minWidth: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '.7rem', fontWeight: 700 }}>
-                      {s.val > 2 ? `${s.val}` : ''}
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 12, height: 12, borderRadius: 3, background: s.color }} />
+                      <span style={{ fontSize: '.8rem', color: 'var(--ink-soft)' }}>
+                        <strong>{s.lbl}</strong>: {s.val} ({counts.total > 0 ? Math.round((s.val / counts.total) * 100) : 0}%)
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -3164,12 +3251,24 @@ function PerfilModal({ user, onClose, onPerfilAtualizado }) {
 
   return (
     <Modal onClose={onClose}>
-      <div className="modal-header"><h2>Editar Perfil</h2><button className="btn-icon" onClick={onClose}>✕</button></div>
+      <div className="modal-header"><h2>Editar Perfil</h2><button className="btn-icon" onClick={onClose}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button></div>
       <div className="modal-body">
-        {erro && <div className="card" style={{ background: '#FEF2F2', color: '#EF4444', marginBottom: 16 }}>{erro}</div>}
+        {erro && <div className="card" style={{ background: '#FEF2F2', color: '#EF4444', marginBottom: 16 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ display: 'inline', marginRight: 6 }}>
+            <circle cx="12" cy="12" r="10"/><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          {erro}
+        </div>}
         <div style={{ marginBottom: 18 }}><label className="label">Nome Completo *</label><input className="input-field" value={form.nome_completo} onChange={e => setForm({ ...form, nome_completo: e.target.value })} /></div>
         <div style={{ marginBottom: 22 }}><label className="label">E-mail *</label><input className="input-field" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
-        <div style={{ marginBottom: 16 }}><label><input type="checkbox" checked={alterandoSenha} onChange={e => { setAlterandoSenha(e.target.checked); if (!e.target.checked) setForm({ ...form, senha_atual: '', nova_senha: '', confirmar_nova_senha: '' }); }} /> Alterar senha</label></div>
+        <div style={{ marginBottom: 16 }}>
+          <label>
+            <input type="checkbox" checked={alterandoSenha} onChange={e => { setAlterandoSenha(e.target.checked); if (!e.target.checked) setForm({ ...form, senha_atual: '', nova_senha: '', confirmar_nova_senha: '' }); }} /> 
+            Alterar senha
+          </label>
+        </div>
         {alterandoSenha && (
           <>
             <div style={{ marginBottom: 14 }}><label className="label">Senha Atual</label><input className="input-field" type="password" value={form.senha_atual} onChange={e => setForm({ ...form, senha_atual: e.target.value })} /></div>
@@ -3206,16 +3305,16 @@ export default function App() {
   }, [token]);
 
   const carregar = useCallback(async () => {
-  const [m, d, todosChamados] = await Promise.all([
-    api('/chamados/meus'), 
-    api('/chamados/disponiveis'),
-    api('/chamados/todos')  
-  ]);
-  
-  if (m) setMeusChamados(m);
-  if (d) setDisponiveis(d);
-  if (todosChamados) setTodos(todosChamados);
-}, [api]);
+    const [m, d, todosChamados] = await Promise.all([
+      api('/chamados/meus'), 
+      api('/chamados/disponiveis'),
+      api('/chamados/todos')  
+    ]);
+    
+    if (m) setMeusChamados(m);
+    if (d) setDisponiveis(d);
+    if (todosChamados) setTodos(todosChamados);
+  }, [api]);
 
   useEffect(() => { if (token && user) carregar(); }, [token, user, carregar]);
 
@@ -3228,43 +3327,43 @@ export default function App() {
   const handlePerfilAtualizado = (novoUsuario) => { setUser(novoUsuario); carregar(); };
 
   const renderPagina = () => {
-  switch (pagina) {
-    case 'novo-chamado': 
-      return <NovoChamadoView user={user} api={api} onSucesso={() => { carregar(); setPagina(nivel === 'TECNICO' ? 'bandeja' : 'meus-chamados'); }} />;
-    
-    case 'meus-chamados': 
-      return <ListaChamados titulo="Meus Chamados" chamados={meusChamados} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} registrarVisualizacao={true}/>;
-    
-    case 'bandeja': 
-      return <ListaChamados titulo="Bandeja de Chamados" chamados={disponiveis.filter(c => !c.id_responsavel)} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} registrarVisualizacao={true} />;
-    
-    case 'meus-atend': 
-      return <MeusAtendimentosView 
-        titulo="Meus Atendimentos" 
-        userId={user.id} 
-        user={user}
-        nivel={nivel} 
-        api={api} 
-        onRecarregar={carregar} 
-        registrarVisualizacao={true}
-      />;
-    
-    case 'todos-chamados': 
-      return <ListaChamados titulo="Todos os Chamados" chamados={todos} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} showStatusFilter={true} user={user} />;
-    
-    case 'logs-visualizacao': 
-      return nivel === 'MASTER_ADMIN' ? <LogsVisualizacaoView api={api} /> : null;
-    
-    case 'dashboard': 
-      return <DashboardView api={api} user={user} />;
-    
-    case 'usuarios': 
-      return nivel === 'MASTER_ADMIN' ? <UsuariosView api={api} /> : null;
-    
-    default: 
-      return null;
-  }
-};
+    switch (pagina) {
+      case 'novo-chamado': 
+        return <NovoChamadoView user={user} api={api} onSucesso={() => { carregar(); setPagina(nivel === 'TECNICO' ? 'bandeja' : 'meus-chamados'); }} />;
+      
+      case 'meus-chamados': 
+        return <ListaChamados titulo="Meus Chamados" chamados={meusChamados} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} registrarVisualizacao={true} user={user}/>;
+      
+      case 'bandeja': 
+        return <ListaChamados titulo="Bandeja de Chamados" chamados={disponiveis.filter(c => !c.id_responsavel)} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} registrarVisualizacao={true} user={user}/>;
+      
+      case 'meus-atend': 
+        return <MeusAtendimentosView 
+          titulo="Meus Atendimentos" 
+          userId={user.id} 
+          user={user}
+          nivel={nivel} 
+          api={api} 
+          onRecarregar={carregar} 
+          registrarVisualizacao={true}
+        />;
+      
+      case 'todos-chamados': 
+        return <ListaChamados titulo="Todos os Chamados" chamados={todos} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} showStatusFilter={true} user={user} />;
+      
+      case 'logs-visualizacao': 
+        return nivel === 'MASTER_ADMIN' ? <LogsVisualizacaoView api={api} /> : null;
+      
+      case 'dashboard': 
+        return <DashboardView api={api} user={user} />;
+      
+      case 'usuarios': 
+        return nivel === 'MASTER_ADMIN' ? <UsuariosView api={api} /> : null;
+      
+      default: 
+        return null;
+    }
+  };
 
   return (
     <>
