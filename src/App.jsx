@@ -1981,7 +1981,7 @@ function Sidebar({ user, pagina, setPagina, onSair, onAbrirPerfil }) {
   const navTecnico = [
     { id: 'dashboard',      icon: <path d="M3 3h7v7H3zm11 0h7v7h-7zm0 11h7v7h-7zM3 14h7v7H3z"/>, label: 'Dashboard' },
     { id: 'todos-chamados', icon: <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>, label: 'Todos os Chamados' },
-    { id: 'meus-atend',     icon: <path d="M13 2L3 14h8l-2 8 10-12h-8z"/>, label: 'Meus Atendimentos' },
+    { id: 'meus-atend',     icon: <path d="M13 2L3 14h8l-2 8 10-12h-8z"/>, label: 'Bandeja' },
   ];
 
   const navAdmin = [
