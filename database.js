@@ -241,6 +241,7 @@ assignResponsavel: async (id, responsavelId) => {
   
   if (chamado.rows.length === 0) return null;
   
+  
   const c = chamado.rows[0];
   const agora = new Date();
   let prazoFinal = new Date(c.prazo_limite);
