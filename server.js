@@ -138,12 +138,14 @@ app.put('/api/chamados/:id/assumir', auth, async (req, res) => {
   try {
     const chamadoResult = await db.getChamadoById(req.params.id);
     const chamado = chamadoResult.rows[0];
-    
-    const isPrimeiroResponsavel = !chamado.id_responsavel_inicial;
-    
+
+    if (chamado.id_responsavel === req.userId) {
+      return res.json(chamado);
+    }
+
     const { rows } = await db.assignResponsavel(req.params.id, req.userId);
-    
-    if (isPrimeiroResponsavel) {
+
+    if (!chamado.id_responsavel_inicial) {
       await db.query(
         `UPDATE chamado_sassepe_chamados 
          SET id_responsavel_inicial = $1, id_responsavel_final = $1 
@@ -151,13 +153,13 @@ app.put('/api/chamados/:id/assumir', auth, async (req, res) => {
         [req.userId, req.params.id]
       );
     }
-    
+
     await db.addHistorico(req.params.id, req.userId, 'ATRIBUICAO', `Chamado assumido por ${req.userNome}`);
-    
+
     const updatedChamado = await db.getChamadoById(req.params.id);
     res.json(updatedChamado.rows[0]);
-  } catch (e) { 
-    res.status(500).json({ error: e.message }); 
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
