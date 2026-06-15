@@ -3383,7 +3383,7 @@ export default function App() {
       
       case 'meus-atend': 
         return <MeusAtendimentosView 
-          titulo="Meus Atendimentos" 
+          titulo="Bandeja" 
           userId={user.id} 
           user={user}
           nivel={nivel} 
