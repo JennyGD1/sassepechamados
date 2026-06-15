@@ -1213,7 +1213,7 @@ function MovimentacoesTecnicasModal({ chamado, onClose, api, user }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
                   <div>
                     <strong>
-                      {isEncaminhamento ? '↗ Encaminhamento' : (isPrivado ? ' Comentário Privado' : ' Comentário Público')}
+                      {isEncaminhamento ? '↗ Encaminhamento' : (isPrivado ? ' Comentário Privado' : ' Atualização')}
                     </strong>
                     {mov.para_usuario_nome && (
                       <span className="badge" style={{ background: '#8B5CF620', color: '#8B5CF6', marginLeft: 8 }}>
@@ -1537,7 +1537,7 @@ function EncaminharModal({ chamado, onClose, onConfirm, user, api }) {
                       <line x1="12" y1="15" x2="12" y2="17"/>
                     </svg>
                   </div>
-                  <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Público</div>
+                  <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Atualização</div>
                   <small style={{ fontSize: '0.7rem', color: 'var(--ink-soft)' }}>Todos veem</small>
                 </button>
                 <button
@@ -1566,7 +1566,7 @@ function EncaminharModal({ chamado, onClose, onConfirm, user, api }) {
 
             <div style={{ marginBottom: 20 }}>
               <label className="label">
-                {tipoComentario === 'PUBLICO' ? 'Comentário Público' : 'Comentário Privado'}
+                {tipoComentario === 'PUBLICO' ? 'Atualização' : 'Comentário Privado'}
               </label>
               <textarea 
                 className="input-field" 
