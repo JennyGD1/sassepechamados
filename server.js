@@ -693,6 +693,23 @@ app.delete('/api/admin/logs-visualizacao', auth, adminOnly, async (req, res) => 
   }
 });
 
+// ── Log de Visualização de Todos os Chamados (apenas TECNICO) ────────────────
+app.post('/api/logs/visualizacao-todos-chamados', auth, async (req, res) => {
+  try {
+    if (req.userNivel !== 'TECNICO') {
+      return res.status(403).json({ error: 'Apenas técnicos geram este log' });
+    }
+    // Conta chamados ABERTO sem responsável no momento do acesso
+    const countResult = await db.contarChamadosAbertosSeResponsavel();
+    const total = parseInt(countResult.rows[0]?.total || 0);
+    const { rows } = await db.registrarVisualizacaoTodosChamados(req.userId, total);
+    res.json(rows[0]);
+  } catch (e) {
+    console.error('Erro ao registrar log todos-chamados:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post('/api/logs/visualizacao-meus-atendimentos', auth, async (req, res) => {
   try {
     const { totalChamadosVisiveis, aba } = req.body;

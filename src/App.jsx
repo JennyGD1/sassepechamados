@@ -2950,6 +2950,29 @@ function LogsVisualizacaoView({ api }) {
   );
 }
 
+// ── View: Todos os Chamados (com log automático para TECNICO) ─────────────────
+function TodosChamadosView({ chamados, userId, nivel, api, onRecarregar, user }) {
+  useEffect(() => {
+    if (nivel === 'TECNICO') {
+      api('/logs/visualizacao-todos-chamados', { method: 'POST', body: JSON.stringify({}) })
+        .catch(() => {});
+    }
+  }, []);
+
+  return (
+    <ListaChamados
+      titulo="Todos os Chamados"
+      chamados={chamados}
+      userId={userId}
+      nivel={nivel}
+      api={api}
+      onRecarregar={onRecarregar}
+      showStatusFilter={true}
+      user={user}
+    />
+  );
+}
+
 // ── View: Dashboard (Estilo iMaida) ─────────────────────────────────────────
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 function gerarCompetencias() { const now = new Date(); const lista = []; for (let i = 11; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); lista.push({ mes: d.getMonth() + 1, ano: d.getFullYear(), label: `${MESES[d.getMonth()]}/${d.getFullYear()}` }); } return lista.reverse(); }
@@ -2961,11 +2984,14 @@ function DashboardView({ api, user }) {
   const [chamados, setChamados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showPicker, setShowPicker] = useState(false);
+  const [dashPage, setDashPage] = useState(0);
+  const DASH_PAGE_SIZE = 10;
 
   const carregar = useCallback(async () => { 
     setLoading(true); 
     const data = await api(`/chamados/dashboard?mes=${competencia.mes}&ano=${competencia.ano}`); 
-    if (data) setChamados(data); 
+    if (data) setChamados(data);
+    setDashPage(0);
     setLoading(false); 
   }, [api, competencia.mes, competencia.ano]);
   
@@ -3203,8 +3229,13 @@ function DashboardView({ api, user }) {
               </div>
 
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)' }}>
-                  <strong>Chamados — {labelCompetencia}</strong> <span style={{ color: 'var(--ink-soft)' }}>({chamados.length} registros)</span>
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span><strong>Chamados — {labelCompetencia}</strong> <span style={{ color: 'var(--ink-soft)' }}>({chamados.length} registros)</span></span>
+                  {chamados.length > DASH_PAGE_SIZE && (
+                    <span style={{ fontSize: '.75rem', color: 'var(--ink-faint)' }}>
+                      Página {dashPage + 1} de {Math.ceil(chamados.length / DASH_PAGE_SIZE)}
+                    </span>
+                  )}
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.82rem' }}>
@@ -3222,10 +3253,10 @@ function DashboardView({ api, user }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {chamados.map((c, i) => {
+                      {chamados.slice(dashPage * DASH_PAGE_SIZE, (dashPage + 1) * DASH_PAGE_SIZE).map((c, i) => {
                         const vencido = c.prazo_limite && new Date(c.prazo_limite) < new Date() && c.status !== 'CONCLUIDO';
                         return (
-                          <tr key={c.id} style={{ borderBottom: i < chamados.length - 1 ? '1px solid var(--line)' : 'none' }}>
+                          <tr key={c.id} style={{ borderBottom: '1px solid var(--line)' }}>
                             <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 600 }}>{c.numero_chamado}</td>
                             <td style={{ padding: '10px 14px' }}>
                               <span className="badge" style={{ background: (STATUS_COLOR[c.status] || '#888') + '20', color: STATUS_COLOR[c.status] || '#888' }}>
@@ -3256,6 +3287,23 @@ function DashboardView({ api, user }) {
                     </tbody>
                   </table>
                 </div>
+                {chamados.length > DASH_PAGE_SIZE && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '14px 20px', borderTop: '1px solid var(--line)' }}>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      disabled={dashPage === 0}
+                      onClick={() => setDashPage(p => Math.max(0, p - 1))}
+                    >← Anterior</button>
+                    <span style={{ fontSize: '.82rem', color: 'var(--ink-soft)' }}>
+                      {dashPage * DASH_PAGE_SIZE + 1}–{Math.min((dashPage + 1) * DASH_PAGE_SIZE, chamados.length)} de {chamados.length}
+                    </span>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      disabled={(dashPage + 1) * DASH_PAGE_SIZE >= chamados.length}
+                      onClick={() => setDashPage(p => p + 1)}
+                    >Próxima →</button>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -3393,7 +3441,7 @@ export default function App() {
         />;
       
       case 'todos-chamados': 
-        return <ListaChamados titulo="Todos os Chamados" chamados={todos} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} showStatusFilter={true} user={user} />;
+        return <TodosChamadosView chamados={todos} userId={user.id} nivel={nivel} api={api} onRecarregar={carregar} user={user} />;
       
       case 'logs-visualizacao': 
         return nivel === 'MASTER_ADMIN' ? <LogsVisualizacaoView api={api} /> : null;

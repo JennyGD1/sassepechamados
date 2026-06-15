@@ -678,6 +678,22 @@ registrarVisualizacaoMeusAtendimentos: (usuarioId, totalChamadosVisiveis, aba = 
   [usuarioId, totalChamadosVisiveis]
 ),
 
+// ── Logs de Visualização de Todos os Chamados (Técnico) ───────────────────────
+registrarVisualizacaoTodosChamados: (usuarioId, totalChamadosAbertosSeResponsavel) => pool.query(
+  `INSERT INTO chamado_sassepe_logs_visualizacao_bandeja (id_usuario, total_chamados_visiveis, data_visualizacao)
+   VALUES ($1, $2, NOW())
+   RETURNING *`,
+  [usuarioId, totalChamadosAbertosSeResponsavel]
+),
+
+// Contar chamados em aberto sem responsável atribuído
+contarChamadosAbertosSeResponsavel: () => pool.query(
+  `SELECT COUNT(*) AS total
+   FROM chamado_sassepe_chamados
+   WHERE status = 'ABERTO'
+     AND id_responsavel IS NULL`
+),
+
   getUltimasVisualizacoesBandeja: (usuarioId, limit = 10) => pool.query(
     `SELECT * FROM chamado_sassepe_logs_visualizacao_bandeja
      WHERE id_usuario = $1
