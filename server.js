@@ -131,6 +131,87 @@ app.get('/api/chamados/dashboard', auth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Comentários
+
+// ── Adicionar comentário ──────────────────────────────────────────────────────
+app.post('/api/chamados/:id/comentarios', auth, async (req, res) => {
+  try {
+    const chamadoId = req.params.id;
+    const usuarioId = req.userId;
+    const { comentario } = req.body;
+
+    if (!comentario || !comentario.trim()) {
+      return res.status(400).json({ error: 'Comentário não pode estar vazio' });
+    }
+
+    const chamado = await db.getChamadoById(chamadoId);
+    if (!chamado.rows.length) {
+      return res.status(404).json({ error: 'Chamado não encontrado' });
+    }
+
+    const c = chamado.rows[0];
+    if (c.status === 'CONCLUIDO') {
+      return res.status(400).json({ error: 'Chamado já foi concluído' });
+    }
+
+    const isSolicitante = String(c.id_solicitante) === String(usuarioId);
+    const isResponsavel = String(c.id_responsavel) === String(usuarioId);
+    const isAdmin = req.userNivel === 'MASTER_ADMIN';
+
+    if (!isSolicitante && !isResponsavel && !isAdmin) {
+      return res.status(403).json({ error: 'Sem permissão para comentar' });
+    }
+
+    let tipo = 'CLIENTE';
+    if (isResponsavel || isAdmin) {
+      tipo = 'TECNICO';
+    }
+
+    const result = await db.saveComentario(
+      chamadoId,
+      usuarioId,
+      comentario.trim(),
+      tipo
+    );
+
+    await db.addHistorico(
+      chamadoId,
+      usuarioId,
+      'COMENTARIO',
+      `${isResponsavel || isAdmin ? 'Técnico' : 'Cliente'} adicionou um comentário`
+    );
+
+
+    res.json({ 
+      success: true, 
+      comentario: result.rows[0],
+      message: 'Comentário adicionado com sucesso'
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao adicionar comentário:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── Buscar comentários ────────────────────────────────────────────────────────
+app.get('/api/chamados/:id/comentarios', auth, async (req, res) => {
+  try {
+    const chamadoId = req.params.id;
+
+    const chamado = await db.getChamadoById(chamadoId);
+    if (!chamado.rows.length) {
+      return res.status(404).json({ error: 'Chamado não encontrado' });
+    }
+
+    const result = await db.getComentariosByChamado(chamadoId);
+    res.json(result.rows);
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.put('/api/chamados/:id/assumir', auth, async (req, res) => {
   if (req.userNivel === 'ANALISTA') {
     return res.status(403).json({ error: 'Analistas não podem assumir chamados' });
@@ -177,19 +258,85 @@ app.put('/api/chamados/:id/fechar', auth, async (req, res) => {
 
 app.put('/api/chamados/:id/validar', auth, async (req, res) => {
   try {
-    const { aprovado } = req.body;
-    if (aprovado) {
-      await db.finalizeChamado(req.params.id);
-    } else {
-      await db.updateStatus(req.params.id, 'EM ANALISE');
+    const { aprovado, justificativa } = req.body;
+    const chamadoId = req.params.id;
+
+    const chamadoResult = await db.getChamadoById(chamadoId);
+    if (!chamadoResult.rows.length) {
+      return res.status(404).json({ error: 'Chamado não encontrado' });
     }
-    await db.addHistorico(
-      req.params.id, req.userId,
-      aprovado ? 'APROVACAO' : 'RECUSA',
-      aprovado ? 'Solicitante aprovou a resolução — chamado encerrado' : 'Solicitante recusou a resolução — chamado reaberto'
-    );
-    res.json({ success: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    
+    const chamado = chamadoResult.rows[0];
+    
+    if (aprovado) {
+      await db.finalizeChamado(chamadoId);
+      await db.addHistorico(
+        chamadoId, 
+        req.userId, 
+        'APROVACAO',
+        'Solicitante aprovou a resolução — chamado encerrado'
+      );
+      
+      const chamadoAtualizado = await db.getChamadoById(chamadoId);
+      return res.json({ 
+        success: true, 
+        chamado: chamadoAtualizado.rows[0],
+        message: 'Chamado aprovado e concluído'
+      });
+      
+    } else {
+      
+      if (chamado.pausa_iniciada_em) {
+        const result = await db.atualizarPrazo(chamadoId);
+        
+        if (result.rows && result.rows.length > 0) {
+          console.log('✅ Prazo atualizado:', {
+            pausa_retomada_em: result.rows[0].pausa_retomada_em,
+            tempo_pausado_segundos: result.rows[0].tempo_pausado_segundos,
+            prazo_limite: result.rows[0].prazo_limite,
+            status: result.rows[0].status
+          });
+          
+          await db.addHistorico(
+            chamadoId, 
+            req.userId, 
+            'RECUSA',
+            justificativa 
+              ? `Solicitante recusou a resolução. Justificativa: "${justificativa}"`
+              : 'Solicitante recusou a resolução — chamado reaberto'
+          );
+          
+          const chamadoAtualizado = await db.getChamadoById(chamadoId);
+          return res.json({ 
+            success: true, 
+            chamado: chamadoAtualizado.rows[0],
+            message: 'Chamado recusado e reaberto para análise'
+          });
+        }
+      }
+      
+      await db.updateStatus(chamadoId, 'EM ANALISE');
+      await db.addHistorico(
+        chamadoId, 
+        req.userId, 
+        'RECUSA',
+        justificativa 
+          ? `Solicitante recusou a resolução. Justificativa: "${justificativa}"`
+          : 'Solicitante recusou a resolução — chamado reaberto'
+      );
+      
+      const chamadoAtualizado = await db.getChamadoById(chamadoId);
+      return res.json({ 
+        success: true, 
+        chamado: chamadoAtualizado.rows[0],
+        message: 'Chamado recusado e reaberto para análise'
+      });
+    }
+    
+  } catch (e) { 
+    console.error('❌ Erro ao validar chamado:', e);
+    res.status(500).json({ error: e.message }); 
+  }
 });
 
 app.get('/api/chamados/:id/historico', auth, async (req, res) => {
@@ -202,7 +349,6 @@ app.put('/api/chamados/:id/validar', auth, async (req, res) => {
     const { aprovado } = req.body;
     const chamadoId = req.params.id;
     
-    // Buscar o chamado atual para ter as informações
     const chamadoResult = await db.getChamadoById(chamadoId);
     if (!chamadoResult.rows.length) {
       return res.status(404).json({ error: 'Chamado não encontrado' });
@@ -210,37 +356,54 @@ app.put('/api/chamados/:id/validar', auth, async (req, res) => {
     
     const chamado = chamadoResult.rows[0];
     
-    // Usar a função validarChamado do database.js (que já tem a lógica de SLA)
     const result = await db.validarChamado(chamadoId, aprovado);
-    
-    // Adicionar ao histórico
+
     if (aprovado) {
       await db.addHistorico(
         chamadoId, req.userId, 'APROVACAO',
         'Solicitante aprovou a resolução — chamado encerrado'
       );
     } else {
-      // Calcular o tempo que ficou pausado para mostrar no histórico
       let tempoPausado = 0;
       if (chamado.pausa_iniciada_em) {
         const pausaIniciada = new Date(chamado.pausa_iniciada_em);
         const agora = new Date();
-        tempoPausado = Math.floor((agora - pausaIniciada) / 60); // minutos
+        tempoPausado = Math.floor((agora - pausaIniciada) / 60); 
       }
-      
       await db.addHistorico(
         chamadoId, req.userId, 'RECUSA',
         `Solicitante recusou a resolução — chamado reaberto${tempoPausado > 0 ? ` com SLA estendido em ${tempoPausado} minutos` : ''}`
       );
     }
-    
-    // Buscar o chamado atualizado para retornar
+
     const chamadoAtualizado = await db.getChamadoById(chamadoId);
     res.json(chamadoAtualizado.rows[0]);
     
   } catch (e) { 
     console.error('Erro ao validar chamado:', e);
     res.status(500).json({ error: e.message }); 
+  }
+});
+// ── Consultar SLA de um chamado ──────────────────────────────────────────────
+app.get('/api/chamados/:id/sla', auth, async (req, res) => {
+  try {
+    const chamadoId = req.params.id;
+    
+    const chamadoResult = await db.getChamadoById(chamadoId);
+    if (!chamadoResult.rows.length) {
+      return res.status(404).json({ error: 'Chamado não encontrado' });
+    }
+    
+    const slaInfo = await db.calcularSLARestante(chamadoId);
+    
+    if (!slaInfo) {
+      return res.status(404).json({ error: 'Erro ao calcular SLA' });
+    }
+    
+    res.json(slaInfo);
+  } catch (e) {
+    console.error('Erro ao consultar SLA:', e);
+    res.status(500).json({ error: e.message });
   }
 });
 
